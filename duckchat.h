@@ -13,116 +13,122 @@
 #define packed __attribute__((packed))
 
 /* Define the length limits */
-#define USERNAME_MAX 32
-#define CHANNEL_MAX 32
-#define SAY_MAX 64
+#define USERNAME_MAX_CHAR 32
+#define CHANNEL_MAX_CHAR 32
+#define SAY_MAX_CHAR 64
 
 /* Define some types for designating request and text codes */
-typedef int request_t;
-typedef int text_t;
+// typedef int request_t;
+// typedef int TXT_TYPE;
 
 /* Define codes for request types. These are the messages sent to the server. */
-#define REQ_LOGIN 0
-#define REQ_LOGOUT 1
-#define REQ_JOIN 2
-#define REQ_LEAVE 3
-#define REQ_SAY 4
-#define REQ_LIST 5
-#define REQ_WHO 6
-#define REQ_KEEP_ALIVE 7 /* Only needed by graduate students */
+// #define REQ_LOGIN 0
+// #define REQ_LOGOUT 1
+// #define REQ_JOIN 2
+// #define REQ_LEAVE 3
+// #define REQ_SAY 4
+// #define REQ_LIST 5
+// #define REQ_WHO 6
+// #define REQ_KEEP_ALIVE 7 /* Only needed by graduate students */
+
+typedef enum { REQ_LOGIN, REQ_LOGOUT, REQ_JOIN, REQ_LEAVE, REQ_SAY, REQ_LIST, REQ_WHO, REQ_KEEP_ALIVE } REQUEST_TYPE;
 
 /* Define codes for text types. These are the messages sent to the client. */
-#define TXT_SAY 0
-#define TXT_LIST 1
-#define TXT_WHO 2
-#define TXT_ERROR 3
+// #define TXT_SAY 0
+// #define TXT_LIST 1
+// #define TXT_WHO 2
+// #define TXT_ERROR 3
+
+typedef enum { TXT_SAY, TXT_LIST, TXT_WHO, TXT_ERROR } TXT_TYPE;
+
 /* This structure is used for a generic request type, to the server. */
-struct request {
-  request_t req_type;
-} packed;
+typedef struct _request {
+  REQUEST_TYPE req_type;
+} packed request;
 
 /* Once we've looked at req_type, we then cast the pointer to one of
  * the types below to look deeper into the structure. Each of these
  * corresponds with one of the REQ_ codes above. */
-struct request_login {
-  request_t req_type; /* = REQ_LOGIN */
-  char req_username[USERNAME_MAX];
-} packed;
+typedef struct _request_login {
+  REQUEST_TYPE req_type; /* = REQ_LOGIN */
+  char username[USERNAME_MAX_CHAR];
+} packed request_login;
 
-struct request_logout {
-  request_t req_type; /* = REQ_LOGOUT */
-} packed;
+typedef struct _request_logout {
+  REQUEST_TYPE req_type; /* = REQ_LOGOUT */
+} packed request_logout;
 
-struct request_join {
-  request_t req_type; /* = REQ_JOIN */
-  char req_channel[CHANNEL_MAX];
-} packed;
+typedef struct _request_join {
+  REQUEST_TYPE req_type; /* = REQ_JOIN */
+  char channel[CHANNEL_MAX_CHAR];
+} packed request_join;
 
-struct request_leave {
-  request_t req_type; /* = REQ_LEAVE */
-  char req_channel[CHANNEL_MAX];
-} packed;
+typedef struct _request_leave {
+  REQUEST_TYPE req_type; /* = REQ_LEAVE */
+  char channel[CHANNEL_MAX_CHAR];
+} packed request_leave;
 
-struct request_say {
-  request_t req_type; /* = REQ_SAY */
-  char req_channel[CHANNEL_MAX];
-  char req_text[SAY_MAX];
-} packed;
+typedef struct _request_say {
+  REQUEST_TYPE req_type; /* = REQ_SAY */
+  char channel[CHANNEL_MAX_CHAR];
+  char text[SAY_MAX_CHAR];
+} packed request_say;
 
-struct request_list {
-  request_t req_type; /* = REQ_LIST */
-} packed;
+typedef struct _request_list {
+  REQUEST_TYPE req_type; /* = REQ_LIST */
+} packed request_list;
 
-struct request_who {
-  request_t req_type; /* = REQ_WHO */
-  char req_channel[CHANNEL_MAX];
-} packed;
+typedef struct _request_who {
+  REQUEST_TYPE req_type; /* = REQ_WHO */
+  char channel[CHANNEL_MAX_CHAR];
+} packed request_who;
 
-struct request_keep_alive {
-  request_t req_type; /* = REQ_KEEP_ALIVE */
-} packed;
+typedef struct _request_keep_alive {
+  REQUEST_TYPE req_type; /* = REQ_KEEP_ALIVE */
+} packed request_keep_alive;
 
 /* This structure is used for a generic text type, to the client. */
-struct text {
-  text_t txt_type;
-} packed;
+typedef struct _text {
+  TXT_TYPE txt_type;
+} packed text;
 
 /* Once we've looked at txt_type, we then cast the pointer to one of
  * the types below to look deeper into the structure. Each of these
  * corresponds with one of the TXT_ codes above. */
-struct text_say {
-  text_t txt_type; /* = TXT_SAY */
-  char txt_channel[CHANNEL_MAX];
-  char txt_username[USERNAME_MAX];
-  char txt_text[SAY_MAX];
-} packed;
+typedef struct _text_say {
+  TXT_TYPE txt_type; /* = TXT_SAY */
+  char channel[CHANNEL_MAX_CHAR];
+  char username[USERNAME_MAX_CHAR];
+  char text[SAY_MAX_CHAR];
+} packed text_say;
 
 /* This is a substructure used by struct text_list. */
-struct channel_info {
-  char ch_channel[CHANNEL_MAX];
-} packed;
+typedef struct _channel_info {
+  char channel[CHANNEL_MAX_CHAR];
+} packed channel_info;
 
-struct text_list {
-  text_t txt_type; /* = TXT_LIST */
-  int txt_nchannels;
-  struct channel_info txt_channels[0]; // May actually be more than 0
-} packed;
+typedef struct _text_list {
+  TXT_TYPE txt_type; /* = TXT_LIST */
+  int n_channel;
+  channel_info *channels;
+} packed text_list;
 
 /* This is a substructure used by text_who. */
-struct user_info {
-  char us_username[USERNAME_MAX];
-};
+typedef struct _user_info {
+  char username[USERNAME_MAX_CHAR];
+  char current_channel[CHANNEL_MAX_CHAR];
+} user_info;
 
-struct text_who {
-  text_t txt_type; /* = TXT_WHO */
-  int txt_nusernames;
-  char txt_channel[CHANNEL_MAX]; // The channel requested
-  struct user_info txt_users[0]; // May actually be more than 0
-} packed;
+typedef struct _text_who {
+  TXT_TYPE txt_type; /* = TXT_WHO */
+  int n_username;
+  char channel[CHANNEL_MAX_CHAR]; // The channel requested
+  user_info *users;
+} packed text_who;
 
-struct text_error {
-  text_t txt_type;         /* = TXT_ERROR */
-  char txt_error[SAY_MAX]; // Error message
-};
+typedef struct _text_error {
+  TXT_TYPE txt_type;            /* = TXT_ERROR */
+  char txt_error[SAY_MAX_CHAR]; // Error message
+} packed text_error;
 
 #endif

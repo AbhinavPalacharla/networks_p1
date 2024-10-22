@@ -1,10 +1,17 @@
 #include "server.h"
 #include "duckchat.h"
+#include "shared.h"
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+int handle_request(request *request) {
+  printf("(CLIENT) >>> REQUEST_TYPE %d\n", request->req_type);
+
+  return SUCCESS;
+}
 
 int main() {
   int sockfd;
@@ -23,24 +30,24 @@ int main() {
   server_addr.sin_port = htons(PORT);
 
   // Bind the socket with the server address
-  if (bind(sockfd, (const struct sockaddr *)&server_addr, sizeof(server_addr)) <
-      0) {
+  if (bind(sockfd, (const struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
     perror("bind failed");
     close(sockfd);
     exit(EXIT_FAILURE);
   }
 
-  unsigned int client_addr_len =
-      sizeof(client_addr); // length of the client address
+  unsigned int client_addr_len = sizeof(client_addr); // length of the client address
 
   char buffer[SERVER_BUFFER_SIZE];
+
+  printf("SERVER STARTING...\n");
 
   while (1) {
     memset(buffer, 0, sizeof(buffer));
 
     // Receive message from client
-    int msg_len = recvfrom(sockfd, (char *)buffer, SERVER_BUFFER_SIZE, 0,
-                           (struct sockaddr *)&client_addr, &client_addr_len);
+    int msg_len =
+        recvfrom(sockfd, (char *)buffer, SERVER_BUFFER_SIZE, 0, (struct sockaddr *)&client_addr, &client_addr_len);
 
     if (msg_len < 0) {
       perror("Failed to recieve message from client.");
@@ -48,14 +55,18 @@ int main() {
       exit(EXIT_FAILURE);
     }
 
+    printf("MESSAGE LEN: %d\n", msg_len);
+
     buffer[msg_len] = '\0';
 
-    printf("(CLIENT) >>> %s\n", buffer);
+    // printf("(CLIENT) >>> REQUEST_TYPE %d\n", ((request *)buffer)->req_type);
+    // printf("REQUEST_TYPE: %d\n", buffer[0]);
+    //
+    handle_request((request *)buffer);
 
     // Send acknowledgment to client
     const char *ack = "Message received!";
-    sendto(sockfd, ack, strlen(ack), 0, (struct sockaddr *)&client_addr,
-           client_addr_len);
+    sendto(sockfd, ack, strlen(ack), 0, (struct sockaddr *)&client_addr, client_addr_len);
     printf("Acknowledgment sent to client.\n");
   }
 

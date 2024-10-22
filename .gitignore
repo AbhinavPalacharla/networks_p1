@@ -1,0 +1,4 @@
+*.out
+my_*
+.clang-format
+.zed
