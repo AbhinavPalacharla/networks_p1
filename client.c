@@ -9,104 +9,56 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-// int send_packet(int sockfd, struct sockaddr_in servaddr, int packet_type, user_info *user) {
-
-//   if (packet_type == REQ_LOGIN) {
-//     request_login *login_packet = (request_login *)malloc(sizeof(request_login));
-
-//   } else if (packet_type == REQ_LOGOUT) {
-//     request_logout *logout_packet = (request_logout *)malloc(sizeof(request_logout));
-
-//     logout_packet->req_type = REQ_LOGOUT;
-
-//     sendto(sockfd, logout_packet, sizeof(*logout_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
-//   } else {
-//     perror("Unknown packet type");
-//     return FAILURE;
-//   }
-
-//   return SUCCESS;
-// }
-
-// NOTE: char *data used for channel to join, channel to leave, message to say, etc.
 int send_packet(int sockfd, struct sockaddr_in servaddr, int packet_type, user_info *user, char *data) {
   if (packet_type == REQ_LOGIN) {
+    request_login login_packet;
+    login_packet.req_type = REQ_LOGIN;
+    strncpy(login_packet.username, user->username, USERNAME_MAX_CHAR);
 
-    request_login *login_packet = (request_login *)malloc(sizeof(request_login));
-
-    login_packet->req_type = REQ_LOGIN;
-    strncpy(login_packet->username, user->username, USERNAME_MAX_CHAR);
-
-    sendto(sockfd, login_packet, sizeof(*login_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
-
-    free(login_packet);
+    sendto(sockfd, &login_packet, sizeof(login_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
 
   } else if (packet_type == REQ_LOGOUT) {
-
-    request_logout *logout_packet = (request_logout *)malloc(sizeof(request_logout));
-
-    logout_packet->req_type = REQ_LOGOUT;
+    request_logout logout_packet;
+    logout_packet.req_type = REQ_LOGOUT;
 
     int bytes_sent =
-        sendto(sockfd, logout_packet, sizeof(*logout_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
-
+        sendto(sockfd, &logout_packet, sizeof(logout_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
     printf("BYTES SENT: %d\n", bytes_sent);
 
-    free(logout_packet);
-
   } else if (packet_type == REQ_JOIN) {
+    request_join join_packet;
+    join_packet.req_type = REQ_JOIN;
+    strncpy(join_packet.channel, data, CHANNEL_MAX_CHAR);
 
-    request_join *join_packet = (request_join *)malloc(sizeof(request_join));
-
-    join_packet->req_type = REQ_JOIN;
-    strncpy(join_packet->channel, data, CHANNEL_MAX_CHAR); // data = channel name to join
-
-    sendto(sockfd, join_packet, sizeof(*join_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
-
-    // TODO: After confirmation recieved that user joined channel, set their current channel to that one
-    //  (for sending purposes). Make this a seperate function called handle_recieved_packet() or something
-    // This will not be handled in this function
-    free(join_packet);
+    sendto(sockfd, &join_packet, sizeof(join_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
 
   } else if (packet_type == REQ_LEAVE) {
+    request_leave leave_packet;
+    leave_packet.req_type = REQ_LEAVE;
+    strncpy(leave_packet.channel, data, CHANNEL_MAX_CHAR);
 
-    request_leave *leave_packet = (request_leave *)malloc(sizeof(request_leave));
-
-    leave_packet->req_type = REQ_LEAVE;
-    strncpy(leave_packet->channel, data, CHANNEL_MAX_CHAR); // data = channel name to leave
-
-    sendto(sockfd, leave_packet, sizeof(*leave_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
-    free(leave_packet);
+    sendto(sockfd, &leave_packet, sizeof(leave_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
 
   } else if (packet_type == REQ_SAY) {
+    request_say say_packet;
+    say_packet.req_type = REQ_SAY;
+    strncpy(say_packet.channel, user->current_channel, CHANNEL_MAX_CHAR);
+    strncpy(say_packet.text, data, SAY_MAX_CHAR);
 
-    request_say *say_packet = (request_say *)malloc(sizeof(request_say));
-
-    say_packet->req_type = REQ_SAY;
-    strncpy(say_packet->channel, user->current_channel, CHANNEL_MAX_CHAR);
-    strncpy(say_packet->text, data, SAY_MAX_CHAR); // data = user message to say in channel
-
-    sendto(sockfd, say_packet, sizeof(*say_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
-    free(say_packet);
+    sendto(sockfd, &say_packet, sizeof(say_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
 
   } else if (packet_type == REQ_LIST) {
+    request_list list_packet;
+    list_packet.req_type = REQ_LIST;
 
-    request_list *list_packet = (request_list *)malloc(sizeof(request_list));
-
-    list_packet->req_type = REQ_LIST;
-
-    sendto(sockfd, list_packet, sizeof(*list_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
-    free(list_packet);
+    sendto(sockfd, &list_packet, sizeof(list_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
 
   } else if (packet_type == REQ_WHO) {
+    request_who who_packet;
+    who_packet.req_type = REQ_WHO;
+    strncpy(who_packet.channel, data, CHANNEL_MAX_CHAR);
 
-    request_who *who_packet = (request_who *)malloc(sizeof(request_who));
-
-    who_packet->req_type = REQ_WHO;
-    strncpy(who_packet->channel, data, CHANNEL_MAX_CHAR);
-
-    sendto(sockfd, who_packet, sizeof(*who_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
-    free(who_packet);
+    sendto(sockfd, &who_packet, sizeof(who_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
 
   } else {
     perror("Unknown packet type");
@@ -116,7 +68,7 @@ int send_packet(int sockfd, struct sockaddr_in servaddr, int packet_type, user_i
   return SUCCESS;
 }
 
-int handle_command(int sockfd, struct sockaddr_in servaddr, char *command, user_info *user) {
+int old_handle_command(int sockfd, struct sockaddr_in servaddr, char *command, user_info *user) {
   // Check for (/) commands from user
   if (strncmp(command, "/exit", strlen("/exit")) == 0) {
     send_packet(sockfd, servaddr, REQ_LOGOUT, NULL, NULL);
@@ -155,6 +107,93 @@ int handle_command(int sockfd, struct sockaddr_in servaddr, char *command, user_
   return SUCCESS;
 }
 
+int handle_command(int sockfd, struct sockaddr_in servaddr, char *command, user_info *user) {
+  // Check for (/) commands from user
+  if (strncmp(command, "/exit", strlen("/exit")) == 0) {
+
+    send_packet(sockfd, servaddr, REQ_LOGOUT, NULL, NULL);
+
+    printf("Exiting...\n");
+    return SUCCESS_EXIT;
+
+  } else if (strncmp(command, "/join", strlen("/join")) == 0) {
+
+    char *channel = command + strlen("/join");
+    // Skip leading whitespace
+    while (*channel == ' ') {
+      channel++;
+    }
+    // Check if channel name is provided
+    if (*channel == '\0') {
+      printf("(CLIENT) >>> ERROR: Please provide a channel name to join.\nUsage: /join [channel]\n");
+      return NON_FATAL_ERR;
+    }
+
+    send_packet(sockfd, servaddr, REQ_JOIN, user, channel);
+
+  } else if (strncmp(command, "/leave", strlen("/leave")) == 0) {
+
+    char *channel = command + strlen("/leave");
+    // Skip leading whitespace
+    while (*channel == ' ') {
+      channel++;
+    }
+    // Check if channel name is provided
+    if (*channel == '\0') {
+      printf("(CLIENT) >>> ERROR: Please provide a channel name to leave.\nUsage: /leave [channel]\n");
+      return NON_FATAL_ERR;
+    }
+
+    send_packet(sockfd, servaddr, REQ_LEAVE, user, channel);
+
+  } else if (strncmp(command, "/list", strlen("/list")) == 0) {
+
+    send_packet(sockfd, servaddr, REQ_LIST, user, NULL);
+
+  } else if (strncmp(command, "/who", strlen("/who")) == 0) {
+
+    char *channel = command + strlen("/who");
+    // Skip leading whitespace
+    while (*channel == ' ') {
+      channel++;
+    }
+    // Check if channel name is provided
+    if (*channel == '\0') {
+      printf("(CLIENT) >>> ERROR: Please provide a channel name.\nUsage: /who [channel]\n");
+      return NON_FATAL_ERR;
+    }
+
+    // TODO: On server make sure channel exists otherwise throw error
+
+    send_packet(sockfd, servaddr, REQ_WHO, user, channel);
+
+  } else if (strncmp(command, "/switch", strlen("/switch")) == 0) {
+
+    char *channel = command + strlen("/switch");
+    // Skip leading whitespace
+    while (*channel == ' ') {
+      channel++;
+    }
+    // Check if channel name is provided
+    if (*channel == '\0') {
+      printf("(CLIENT) >>> ERROR: Please provide a channel name to switch to.\nUsage: /switch [channel]\n");
+      return NON_FATAL_ERR;
+    }
+
+    // TODO: Make sure user is subscribed to channel before using /switch to the channel
+
+    // Update user's current channel
+    strncpy(user->current_channel, channel, CHANNEL_MAX_CHAR);
+    printf("Switched to channel: %s\n", channel);
+
+  } else {
+    printf("(CLIENT) >>> ERROR: Unknown command\n");
+    return NON_FATAL_ERR;
+  }
+
+  return SUCCESS;
+}
+
 int main(int argc, char **argv) {
   int sockfd;
   struct sockaddr_in servaddr;
@@ -176,7 +215,11 @@ int main(int argc, char **argv) {
   // Configure server info
   servaddr.sin_family = AF_INET;
   servaddr.sin_port = htons(SERVER_PORT);
-  servaddr.sin_addr.s_addr = inet_addr(SERVER_IP);
+  // servaddr.sin_addr.s_addr = inet_addr(SERVER_IP);
+  if (inet_pton(AF_INET, SERVER_IP, &(servaddr.sin_addr)) <= 0) {
+    perror("Invalid address/ Address not supported");
+    goto fail_exit;
+  }
 
   // TODO: change default username case before final submission
   user_info *user = (user_info *)malloc(sizeof(user_info));
@@ -188,9 +231,11 @@ int main(int argc, char **argv) {
   }
   strncpy(user->current_channel, "Common", strlen("Common")); // Default channel for user to join
 
-  // TODO: Automatically send login packet as last step of client initialization
-
   printf("CLIENT STARTING...\n");
+
+  // TODO: Automatically send login packet as last step of client initialization
+  send_packet(sockfd, servaddr, REQ_LOGIN, user, NULL);
+
   // Send and recieve messages loop
   while (1) {
     // Configure fds to watch
