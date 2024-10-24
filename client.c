@@ -2,12 +2,25 @@
 #include "duckchat.h"
 #include "shared.h"
 #include <arpa/inet.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/select.h>
 #include <sys/time.h>
 #include <unistd.h>
+
+int send_message(int sockfd, struct sockaddr_in servaddr, user_info *user, char *msg) {
+  request_say say_packet;
+
+  say_packet.req_type = REQ_SAY;
+  strncpy(say_packet.channel, user->current_channel, strlen(user->current_channel));
+  strncpy(say_packet.text, msg, strlen(msg));
+
+  sendto(sockfd, &say_packet, sizeof(say_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
+
+  return SUCCESS;
+}
 
 int send_packet(int sockfd, struct sockaddr_in servaddr, int packet_type, user_info *user, char *data) {
   if (packet_type == REQ_LOGIN) {
@@ -21,9 +34,7 @@ int send_packet(int sockfd, struct sockaddr_in servaddr, int packet_type, user_i
     request_logout logout_packet;
     logout_packet.req_type = REQ_LOGOUT;
 
-    int bytes_sent =
-        sendto(sockfd, &logout_packet, sizeof(logout_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
-    printf("BYTES SENT: %d\n", bytes_sent);
+    sendto(sockfd, &logout_packet, sizeof(logout_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
 
   } else if (packet_type == REQ_JOIN) {
     request_join join_packet;
@@ -63,45 +74,6 @@ int send_packet(int sockfd, struct sockaddr_in servaddr, int packet_type, user_i
   } else {
     perror("Unknown packet type");
     return FAILURE;
-  }
-
-  return SUCCESS;
-}
-
-int old_handle_command(int sockfd, struct sockaddr_in servaddr, char *command, user_info *user) {
-  // Check for (/) commands from user
-  if (strncmp(command, "/exit", strlen("/exit")) == 0) {
-    send_packet(sockfd, servaddr, REQ_LOGOUT, NULL, NULL);
-    printf("Exiting...\n");
-  } else if (strncmp(command, "/join", strlen("/join")) == 0) {
-
-    // // Check if user provided a channel name to join format -> /join [channel]
-    // // so +2 to account for space and channel name being atleast 1 char
-    // if (strlen(command) < (strlen("/join") + 2)) {
-    //   printf("(CLIENT) >>> ERROR: Please provide a channel name to join.\nUsage: /join [channel]");
-    // }
-
-    // char *channel;
-
-    // Check if user provided a channel name to join format -> /join [channel]
-    char *channel = command + strlen("/join");
-
-    // Skip leading whitespace
-    while (*channel == ' ') {
-      channel++;
-    }
-
-    // Check if channel name is provided
-    if (*channel == '\0') {
-      printf("(CLIENT) >>> ERROR: Please provide a channel name to join.\nUsage: /join [channel]\n");
-      return NON_FATAL_ERR;
-    }
-
-    send_packet(sockfd, servaddr, REQ_JOIN, user, channel);
-  } else if (strncmp(command, "/leave", strlen("/leave")) == 0) {
-  } else if (strncmp(command, "/list", strlen("/list")) == 0) {
-  } else if (strncmp(command, "/who", strlen("/who")) == 0) {
-  } else if (strncmp(command, "/switch", strlen("/switch")) == 0) {
   }
 
   return SUCCESS;
@@ -215,13 +187,12 @@ int main(int argc, char **argv) {
   // Configure server info
   servaddr.sin_family = AF_INET;
   servaddr.sin_port = htons(SERVER_PORT);
-  // servaddr.sin_addr.s_addr = inet_addr(SERVER_IP);
   if (inet_pton(AF_INET, SERVER_IP, &(servaddr.sin_addr)) <= 0) {
     perror("Invalid address/ Address not supported");
     goto fail_exit;
   }
 
-  // TODO: change default username case before final submission
+  // Configure user
   user_info *user = (user_info *)malloc(sizeof(user_info));
   if (argc == 2) {
     strncpy(user->username, argv[argc - 1], (sizeof(char) * 32));
@@ -233,7 +204,7 @@ int main(int argc, char **argv) {
 
   printf("CLIENT STARTING...\n");
 
-  // TODO: Automatically send login packet as last step of client initialization
+  // Automatically send login packet as last step of client initialization
   send_packet(sockfd, servaddr, REQ_LOGIN, user, NULL);
 
   // Send and recieve messages loop
@@ -281,11 +252,9 @@ int main(int argc, char **argv) {
           goto success_exit;
         }
       } else {
-        // Normal message to channel
-        sendto(sockfd, message_buffer, strlen(message_buffer), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
+        // Normal message to user active channel
+        send_message(sockfd, servaddr, user, message_buffer);
       }
-
-      // printf("Message sent to server.\n");
 
       memset(message_buffer, 0, sizeof(message_buffer)); // clear message buffer for use in next message
     }

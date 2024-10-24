@@ -15,4 +15,7 @@
 - Need to handle input validation on client for things like giving channel name longer than allowed channel name, username longer than allowed, etc.
 
 - If a user switches channels do we need to check and see if the channel exists before switching or if they switch to a channel that doesn't exist and send a message should we just create the channel and then send the message
+
   - Can check and see if user has joined channel before switching to it
+
+- Error checking for if executable is ran with proper arguments
