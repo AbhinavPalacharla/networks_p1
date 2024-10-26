@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 void view_request(request *request, struct sockaddr_in *client) {
@@ -33,11 +34,16 @@ int handle_request(int sockfd, request *request, struct sockaddr_in *client, use
     strncpy(new_user->username, rq_login->username, USERNAME_MAX_CHAR);     // username
     inet_ntop(AF_INET, &(client->sin_addr), new_user->ip, INET_ADDRSTRLEN); // IP
     new_user->port = ntohs(client->sin_port);                               // Port
-
+    new_user->n_subbed_channels = 0;
     new_user->subbed_channels = NULL;
     users->num_users++;
 
+    if ((join_channel(channels, new_user, "common")) < 0) {
+      send_error(sockfd, client, "Failed to join common channel");
+    }
+
     print_users(users);
+    print_channels(channels);
 
     return SUCCESS;
   }
@@ -80,6 +86,7 @@ int main() {
   users_list->users = NULL;
   channels_list->num_channels = 0;
   channels_list->channels = NULL;
+  create_channel(channels_list, "common");
 
   printf("SERVER STARTING...\n");
 
@@ -88,8 +95,7 @@ int main() {
     memset(&client_addr, 0, sizeof(client_addr));
 
     // Receive message from client
-    int msg_len =
-        recvfrom(sockfd, (char *)buffer, SERVER_BUFFER_SIZE, 0, (struct sockaddr *)&client_addr, &client_addr_len);
+    int msg_len = recvfrom(sockfd, (char *)buffer, SERVER_BUFFER_SIZE, 0, (struct sockaddr *)&client_addr, &client_addr_len);
 
     if (msg_len < 0) {
       perror("Failed to recieve message from client.");

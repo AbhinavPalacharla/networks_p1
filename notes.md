@@ -19,3 +19,7 @@
   - Can check and see if user has joined channel before switching to it
 
 - Error checking for if executable is ran with proper arguments
+
+- Normalize command and channel to lowercase
+
+- If fail to realloc in join_channel() then rollback changes accordingly

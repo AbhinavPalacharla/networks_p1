@@ -2,6 +2,7 @@
 #include "duckchat.h"
 #include "shared.h"
 #include <arpa/inet.h>
+#include <ctype.h>
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -200,7 +201,7 @@ int main(int argc, char **argv) {
     // Default username for testing purposes...
     strncpy(user->username, "abhinavp", strlen("abhinavp"));
   }
-  strncpy(user->current_channel, "Common", strlen("Common")); // Default channel for user to join
+  strncpy(user->current_channel, "common", strlen("common")); // Default channel for user to join
 
   printf("CLIENT STARTING...\n");
 

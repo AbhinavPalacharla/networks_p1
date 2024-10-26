@@ -2,8 +2,11 @@
 #define SERVER_H
 
 #include "duckchat.h"
+#include "shared.h"
 #include <arpa/inet.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define PORT 4949
 #define SERVER_IP "127.0.0.1"
@@ -20,11 +23,13 @@ typedef struct _user {
   char username[USERNAME_MAX_CHAR];
   char ip[INET_ADDRSTRLEN];
   unsigned short port;
+  int n_subbed_channels;
   channel **subbed_channels;
 } user;
 
 typedef struct _channel {
   char name[CHANNEL_MAX_CHAR];
+  int n_subbed_users;
   user **subbed_users;
 } channel;
 
@@ -50,10 +55,10 @@ void print_user(user *user) {
     printf("NONE");
   } else {
     for (int i = 0; user->subbed_channels[i] != NULL; i++) {
-      printf("%s | ", user->subbed_channels[i]->name);
+      printf("%s, ", user->subbed_channels[i]->name);
     }
   }
-  printf("\b)\n");
+  printf("\b\b)\n");
 }
 
 void print_users(users *users) {
@@ -71,10 +76,49 @@ void print_users(users *users) {
   }
 
   for (int i = 0; i < users->num_users; i++) {
-    printf("User %d:\n", i + 1);
+    // printf("User %d:\n", i + 1);
     print_user(&users->users[i]);
   }
   printf("================\n\n");
+}
+
+void print_channel(channel *channel) {
+  if (channel == NULL) {
+    printf("Channel is NULL\n");
+    return;
+  }
+
+  printf("[CHANNEL](%s)\n", channel->name);
+  printf("↪[USERS](");
+  if (channel->subbed_users == NULL) {
+    printf("NONE");
+  } else {
+    for (int i = 0; channel->subbed_users[i] != NULL; i++) {
+      printf("%s, ", channel->subbed_users[i]->username);
+    }
+  }
+  printf("\b\b)\n");
+}
+
+void print_channels(channels *channels) {
+  if (channels == NULL) {
+    printf("Channels struct is NULL\n");
+    return;
+  }
+
+  printf("=== CHANNELS LIST ===\n");
+  printf("Total Channels: %d\n\n", channels->num_channels);
+
+  if (channels->num_channels == 0) {
+    printf("No channels exist\n");
+    return;
+  }
+
+  for (int i = 0; i < channels->num_channels; i++) {
+    // printf("Channel %d:\n", i + 1);
+    print_channel(&channels->channels[i]);
+  }
+  printf("===================\n\n");
 }
 
 void print_request_login(request_login *req) {
@@ -165,6 +209,101 @@ void print_client_details(struct sockaddr_in *client) {
   unsigned short port = ntohs(client->sin_port);
 
   printf("CLIENT DETAILS\nIP: %s\nPORT: %d\n", ip_str, port);
+}
+
+channel *create_channel(channels *channels, const char *channel_name) {
+  if (channels == NULL || channel_name == NULL) {
+    return NULL;
+  }
+
+  // Reallocate channels array to make room for new channel
+  channels->channels = (channel *)realloc(channels->channels, (channels->num_channels + 1) * sizeof(channel));
+
+  if (channels->channels == NULL) {
+    return NULL;
+  }
+
+  // Initialize the new channel
+  channel *new_channel = &channels->channels[channels->num_channels];
+
+  // Copy channel name
+  strncpy(new_channel->name, channel_name, CHANNEL_MAX_CHAR);
+  new_channel->name[CHANNEL_MAX_CHAR - 1] = '\0'; // Ensure null termination
+
+  // Initialize subscribed users array
+  new_channel->subbed_users = NULL;
+
+  // Increment channel count
+  channels->num_channels++;
+
+  return new_channel;
+}
+
+channel *find_channel(channels *channels, const char *channel_name) {
+  if (channels == NULL || channel_name == NULL) {
+    return NULL;
+  }
+
+  for (int i = 0; i < channels->num_channels; i++) {
+    if (strcmp(channels->channels[i].name, channel_name) == 0) {
+      return &channels->channels[i];
+    }
+  }
+
+  return NULL; // Channel not found
+}
+
+int send_error(int sockfd, struct sockaddr_in *client, char *error_reason) {
+  text_error error_packet;
+  error_packet.txt_type = TXT_ERROR;
+  strncpy(error_packet.txt_error, error_reason, sizeof(error_packet.txt_error));
+
+  if ((sendto(sockfd, &error_packet, sizeof(error_packet), 0, (const struct sockaddr *)client, sizeof(*client))) < 0) {
+    perror("Failed to send to packet to client");
+    return EXIT_FAILURE;
+  }
+
+  return SUCCESS;
+}
+
+int join_channel(channels *channels, user *target_user, const char *channel_name) {
+  // if (channels == NULL || target_user == NULL || channel_name == NULL) {
+  //   return FAILURE;
+  // }
+
+  // Find the channel
+  channel *target_channel = find_channel(channels, channel_name);
+  if (target_channel == NULL) {
+    return FAILURE;
+  }
+
+  // Check if user is already subscribed to this channel
+  for (int i = 0; i < target_user->n_subbed_channels; i++) {
+    if (strcmp(target_user->subbed_channels[i]->name, channel_name) == 0) {
+      return FAILURE;
+    }
+  }
+
+  // Add channel to user's channels
+  target_user->subbed_channels =
+      (channel **)realloc(target_user->subbed_channels, ((target_user->n_subbed_channels + 1) * sizeof(channel *)));
+  if (target_user->subbed_channels == NULL) {
+    perror("(SERVER) >>> Realloc failed on subbed_channels");
+    return FAILURE;
+  }
+  target_user->subbed_channels[target_user->n_subbed_channels] = target_channel;
+  target_user->n_subbed_channels++;
+
+  // Add user to channel
+  target_channel->subbed_users = (user **)realloc(target_channel->subbed_users, ((target_channel->n_subbed_users + 1) * sizeof(user *)));
+  if (target_channel->subbed_users == NULL) {
+    perror("(SERVER) >>> Realloc failed on subbed_users");
+    return FAILURE;
+  }
+  target_channel->subbed_users[target_channel->n_subbed_users] = target_user;
+  target_channel->n_subbed_users++;
+
+  return SUCCESS;
 }
 
 #endif
