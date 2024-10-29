@@ -123,7 +123,7 @@ typedef struct _text_who {
   TXT_TYPE txt_type; /* = TXT_WHO */
   int n_username;
   char channel[CHANNEL_MAX_CHAR]; // The channel requested
-  user_info *users;
+  user_info users[0];
 } packed text_who;
 
 typedef struct _text_error {

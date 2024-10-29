@@ -185,7 +185,23 @@ int handle_response(text *response) {
 
     printf("%s", str);
   } else if (response->txt_type == TXT_WHO) {
+    text_who *res = (text_who *)response;
 
+    char *str = malloc(sizeof(char) * (strlen("Users on Channel :\n") + strlen(res->channel)));
+    strncpy(str, "Users on Channel ", strlen("Users on Channel "));
+    strcat(str, res->channel);
+    strcat(str, ":\n");
+
+    for (int i = 0; i < res->n_username; i++) {
+      size_t new_size = strlen(str) + strlen(res->users[i].username) + 3;
+      str = realloc(str, new_size);
+
+      strcat(str, "\t");
+      strcat(str, res->users[i].username);
+      strcat(str, "\n");
+    }
+
+    printf("%s", str);
   } else if (response->txt_type == TXT_SAY) {
 
   } else if (response->txt_type == TXT_ERROR) {
@@ -267,7 +283,7 @@ int main(int argc, char **argv) {
 
       text *server_msg = (text *)server_buffer;
 
-      // print_text(server_msg);
+      print_text(server_msg);
 
       handle_response(server_msg);
 

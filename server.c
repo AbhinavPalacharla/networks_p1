@@ -89,6 +89,36 @@ int handle_request(int sockfd, request *request, struct sockaddr_in *client, use
     }
 
     sendto(sockfd, res, size, 0, (const struct sockaddr *)client, sizeof(&client));
+  } else if (request->req_type == REQ_WHO) {
+    request_who *req = (request_who *)request;
+
+    channel *c = find_channel(channels, req->channel);
+
+    if (c == NULL) {
+      perror("Channel for /who not found");
+      // TODO: send error packet
+    }
+
+    int num_users = 0;
+    for (subbed_user *u = c->subbed_users_head; u != NULL; u = u->next) {
+      num_users++;
+    }
+
+    size_t size = sizeof(text_who) + (sizeof(user_info) * num_users);
+
+    text_who *res = (text_who *)malloc(size);
+
+    res->txt_type = TXT_WHO;
+    strncpy(res->channel, req->channel, CHANNEL_MAX_CHAR);
+    res->n_username = num_users;
+
+    int i = 0;
+    for (subbed_user *u = c->subbed_users_head; u != NULL; u = u->next) {
+      strncpy(res->users->username, u->user->username, USERNAME_MAX_CHAR);
+      i++;
+    }
+
+    sendto(sockfd, res, size, 0, (const struct sockaddr *)client, sizeof(&client));
   }
 
   return SUCCESS;
