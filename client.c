@@ -232,12 +232,17 @@ int main(int argc, char **argv) {
       if (n < 0) {
         perror("recvfrom() failed.");
         goto fail_exit;
-      } else if (n > 0) {
-        server_buffer[n] = '\0';
-        printf("Server: %s\n", server_buffer);
-
-        memset(server_buffer, 0, sizeof(server_buffer)); // clear server buffer for use in next server message
       }
+
+      printf("NUM BYTES RECIEVED: %d\n", n);
+
+      server_buffer[n] = '\0';
+
+      text *server_msg = (text *)server_buffer;
+
+      print_text(server_msg);
+
+      memset(server_buffer, 0, sizeof(server_buffer)); // clear server buffer for use in next server message
     }
 
     // Handle client stdin activity

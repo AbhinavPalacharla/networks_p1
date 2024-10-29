@@ -117,7 +117,7 @@ typedef struct _text_list {
 typedef struct _user_info {
   char username[USERNAME_MAX_CHAR];
   char current_channel[CHANNEL_MAX_CHAR];
-} user_info;
+} packed user_info;
 
 typedef struct _text_who {
   TXT_TYPE txt_type; /* = TXT_WHO */

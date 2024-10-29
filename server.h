@@ -19,185 +19,239 @@
 
 typedef struct _channel channel;
 
+typedef struct _subbed_channel {
+  channel *channel;
+  struct _subbed_channel *prev;
+  struct _subbed_channel *next;
+} subbed_channel;
+
 typedef struct _user {
   char username[USERNAME_MAX_CHAR];
   char ip[INET_ADDRSTRLEN];
   unsigned short port;
-  int n_subbed_channels;
-  channel **subbed_channels;
+  subbed_channel *subbed_channels_head;
+  struct _user *next;
+  struct _user *prev;
 } user;
+
+typedef struct _subbed_user {
+  user *user;
+  struct _subbed_user *next;
+  struct _subbed_user *prev;
+} subbed_user;
 
 typedef struct _channel {
   char name[CHANNEL_MAX_CHAR];
-  int n_subbed_users;
-  user **subbed_users;
+  subbed_user *subbed_users_head;
+  struct _channel *next;
+  struct _channel *prev;
 } channel;
 
 typedef struct _users {
   int num_users;
-  user *users;
+  user *users_head;
 } users;
 
 typedef struct _channels {
   int num_channels;
-  channel *channels;
+  channel *channels_head;
 } channels;
 
-void print_user(user *user) {
-  if (user == NULL) {
-    printf("User is NULL\n");
-    return;
-  }
-
-  printf("[USER](%s, %s, %d)\n", user->username, user->ip, user->port);
-  printf("↪[CHANNELS](");
-  if (user->subbed_channels == NULL) {
-    printf("NONE");
-  } else {
-    for (int i = 0; user->subbed_channels[i] != NULL; i++) {
-      printf("%s, ", user->subbed_channels[i]->name);
+channel *find_channel(channels *channel_list, const char *channel_name) {
+  channel *current_channel = channel_list->channels_head;
+  while (current_channel != NULL) {
+    if (strncmp(current_channel->name, channel_name, CHANNEL_MAX_CHAR) == 0) {
+      return current_channel;
     }
+    current_channel = current_channel->next;
   }
-  printf("\b\b)\n");
+  return NULL; // Channel not found
 }
 
-void print_users(users *users) {
-  if (users == NULL) {
-    printf("Users struct is NULL\n");
-    return;
+int create_channel(channels *channel_list, const char *channel_name) {
+  if (find_channel(channel_list, channel_name)) {
+    perror("Channel already exists");
+    return FAILURE;
   }
 
-  printf("=== USERS LIST ===\n");
-  printf("Total Users: %d\n\n", users->num_users);
+  channel *new_channel = (channel *)malloc(sizeof(channel));
 
-  if (users->num_users == 0) {
-    printf("No users registered\n");
-    return;
-  }
+  strncpy(new_channel->name, channel_name, CHANNEL_MAX_CHAR);
+  new_channel->subbed_users_head = NULL;
+  new_channel->next = channel_list->channels_head;
+  new_channel->prev = NULL;
 
-  for (int i = 0; i < users->num_users; i++) {
-    // printf("User %d:\n", i + 1);
-    print_user(&users->users[i]);
+  if (channel_list->channels_head) {
+    channel_list->channels_head->prev = new_channel;
   }
-  printf("================\n\n");
+  channel_list->channels_head = new_channel;
+  channel_list->num_channels++;
+
+  return SUCCESS;
 }
 
-void print_channel(channel *channel) {
-  if (channel == NULL) {
-    printf("Channel is NULL\n");
+void join_channel(user *user, channel *channel) {
+  subbed_channel *new_subbed_channel = (subbed_channel *)malloc(sizeof(subbed_channel));
+  if (!new_subbed_channel)
     return;
-  }
 
-  printf("[CHANNEL](%s)\n", channel->name);
-  printf("↪[USERS](");
-  if (channel->subbed_users == NULL) {
-    printf("NONE");
-  } else {
-    for (int i = 0; channel->subbed_users[i] != NULL; i++) {
-      printf("%s, ", channel->subbed_users[i]->username);
+  new_subbed_channel->channel = channel;
+  new_subbed_channel->next = user->subbed_channels_head;
+  new_subbed_channel->prev = NULL;
+
+  if (user->subbed_channels_head) {
+    user->subbed_channels_head->prev = new_subbed_channel;
+  }
+  user->subbed_channels_head = new_subbed_channel;
+
+  subbed_user *new_subbed_user = (subbed_user *)malloc(sizeof(subbed_user));
+  if (!new_subbed_user)
+    return;
+
+  new_subbed_user->user = user;
+  new_subbed_user->next = channel->subbed_users_head;
+  new_subbed_user->prev = NULL;
+
+  if (channel->subbed_users_head) {
+    channel->subbed_users_head->prev = new_subbed_user;
+  }
+  channel->subbed_users_head = new_subbed_user;
+}
+
+void leave_channel(user *user, channel *channel) {
+  // Remove the channel from the user's list of subscribed channels
+  subbed_channel *subbed_channel_ptr = user->subbed_channels_head;
+  while (subbed_channel_ptr) {
+    if (subbed_channel_ptr->channel == channel) {
+      // Update pointers to remove the subbed_channel from the user's list
+      if (subbed_channel_ptr->prev) {
+        subbed_channel_ptr->prev->next = subbed_channel_ptr->next;
+      } else {
+        user->subbed_channels_head = subbed_channel_ptr->next;
+      }
+      if (subbed_channel_ptr->next) {
+        subbed_channel_ptr->next->prev = subbed_channel_ptr->prev;
+      }
+      free(subbed_channel_ptr); // Free the user's subscription node
+      break;
     }
-  }
-  printf("\b\b)\n");
-}
-
-void print_channels(channels *channels) {
-  if (channels == NULL) {
-    printf("Channels struct is NULL\n");
-    return;
+    subbed_channel_ptr = subbed_channel_ptr->next;
   }
 
-  printf("=== CHANNELS LIST ===\n");
-  printf("Total Channels: %d\n\n", channels->num_channels);
-
-  if (channels->num_channels == 0) {
-    printf("No channels exist\n");
-    return;
-  }
-
-  for (int i = 0; i < channels->num_channels; i++) {
-    // printf("Channel %d:\n", i + 1);
-    print_channel(&channels->channels[i]);
-  }
-  printf("===================\n\n");
-}
-
-void print_request_login(request_login *req) {
-  printf("REQUEST LOGIN:\n");
-  printf("  Type: %d (REQ_LOGIN)\n", req->req_type);
-  printf("  Username: %s\n", req->username);
-}
-
-void print_request_logout(request_logout *req) {
-  printf("REQUEST LOGOUT:\n");
-  printf("  Type: %d (REQ_LOGOUT)\n", req->req_type);
-}
-
-void print_request_join(request_join *req) {
-  printf("REQUEST JOIN:\n");
-  printf("  Type: %d (REQ_JOIN)\n", req->req_type);
-  printf("  Channel: %s\n", req->channel);
-}
-
-void print_request_leave(request_leave *req) {
-  printf("REQUEST LEAVE:\n");
-  printf("  Type: %d (REQ_LEAVE)\n", req->req_type);
-  printf("  Channel: %s\n", req->channel);
-}
-
-void print_request_say(request_say *req) {
-  printf("REQUEST SAY:\n");
-  printf("  Type: %d (REQ_SAY)\n", req->req_type);
-  printf("  Channel: %s\n", req->channel);
-  printf("  Text: %s\n", req->text);
-}
-
-void print_request_list(request_list *req) {
-  printf("REQUEST LIST:\n");
-  printf("  Type: %d (REQ_LIST)\n", req->req_type);
-}
-
-void print_request_who(request_who *req) {
-  printf("REQUEST WHO:\n");
-  printf("  Type: %d (REQ_WHO)\n", req->req_type);
-  printf("  Channel: %s\n", req->channel);
-}
-
-void print_request_keep_alive(request_keep_alive *req) {
-  printf("REQUEST KEEP ALIVE:\n");
-  printf("  Type: %d (REQ_KEEP_ALIVE)\n", req->req_type);
-}
-
-// Helper function to print any request type
-void print_request(request *req) {
-  switch (req->req_type) {
-  case REQ_LOGIN:
-    print_request_login((request_login *)req);
-    break;
-  case REQ_LOGOUT:
-    print_request_logout((request_logout *)req);
-    break;
-  case REQ_JOIN:
-    print_request_join((request_join *)req);
-    break;
-  case REQ_LEAVE:
-    print_request_leave((request_leave *)req);
-    break;
-  case REQ_SAY:
-    print_request_say((request_say *)req);
-    break;
-  case REQ_LIST:
-    print_request_list((request_list *)req);
-    break;
-  case REQ_WHO:
-    print_request_who((request_who *)req);
-    break;
-  case REQ_KEEP_ALIVE:
-    print_request_keep_alive((request_keep_alive *)req);
-    break;
-  default:
-    printf("UNKNOWN REQUEST TYPE: %d\n", req->req_type);
+  // Remove the user from the channel's list of subscribed users
+  subbed_user *subbed_user_ptr = channel->subbed_users_head;
+  while (subbed_user_ptr) {
+    if (subbed_user_ptr->user == user) {
+      // Update pointers to remove the subbed_user from the channel's list
+      if (subbed_user_ptr->prev) {
+        subbed_user_ptr->prev->next = subbed_user_ptr->next;
+      } else {
+        channel->subbed_users_head = subbed_user_ptr->next;
+      }
+      if (subbed_user_ptr->next) {
+        subbed_user_ptr->next->prev = subbed_user_ptr->prev;
+      }
+      free(subbed_user_ptr); // Free the channel's subscription node
+      break;
+    }
+    subbed_user_ptr = subbed_user_ptr->next;
   }
 }
+
+user *find_user(users *user_list, const char *username, struct sockaddr_in *client) {
+  user *current_user = user_list->users_head;
+  while (current_user != NULL) {
+    if (username) {
+      if (strncmp(current_user->username, username, USERNAME_MAX_CHAR) == 0) {
+        return current_user;
+      }
+    } else if (client) {
+      char ip[INET_ADDRSTRLEN];
+      inet_ntop(AF_INET, &(client->sin_addr), ip, INET_ADDRSTRLEN);
+
+      if ((strncmp(current_user->ip, ip, INET_ADDRSTRLEN) == 0) && current_user->port == ntohs(client->sin_port)) {
+        return current_user;
+      }
+    }
+
+    current_user = current_user->next;
+  }
+  return NULL; // User not found
+}
+
+user *create_user(users *user_list, const char *username, struct sockaddr_in *client) {
+
+  if (find_user(user_list, username, NULL)) {
+    perror("User already exists");
+    return NULL; // User already exists
+  }
+
+  user *new_user = (user *)malloc(sizeof(user));
+
+  strncpy(new_user->username, username, USERNAME_MAX_CHAR);
+  inet_ntop(AF_INET, &(client->sin_addr), new_user->ip, INET_ADDRSTRLEN);
+  new_user->port = ntohs(client->sin_port);
+  new_user->subbed_channels_head = NULL;
+  new_user->next = user_list->users_head;
+  new_user->prev = NULL;
+
+  if (user_list->users_head) {
+    user_list->users_head->prev = new_user;
+  }
+  user_list->users_head = new_user;
+  user_list->num_users++;
+
+  return new_user;
+}
+
+void delete_user(users *user_list, user *user) {
+
+  subbed_channel *subbed_channel_ptr = user->subbed_channels_head;
+
+  while (subbed_channel_ptr) {
+    subbed_channel *next_subbed = subbed_channel_ptr->next;
+    leave_channel(user, subbed_channel_ptr->channel);
+    subbed_channel_ptr = next_subbed;
+  }
+
+  if (user->prev) {
+    user->prev->next = user->next;
+  } else {
+    user_list->users_head = user->next;
+  }
+  if (user->next) {
+    user->next->prev = user->prev;
+  }
+  free(user);
+  user_list->num_users--;
+}
+
+int delete_channel(channels *channel_list, channel *channel_to_delete) {
+  // Check if there are users subscribed to this channel
+  if (channel_to_delete->subbed_users_head != NULL) {
+    perror("ERROR: Cannot delete channel as there are still users subscribed.\n");
+    return FAILURE;
+  }
+
+  // Remove the channel from the channels list
+  if (channel_to_delete->prev) {
+    channel_to_delete->prev->next = channel_to_delete->next;
+  } else {
+    channel_list->channels_head = channel_to_delete->next;
+  }
+
+  if (channel_to_delete->next) {
+    channel_to_delete->next->prev = channel_to_delete->prev;
+  }
+
+  // Free the channel memory
+  free(channel_to_delete);
+  channel_list->num_channels--; // Decrement the channel count
+
+  return SUCCESS;
+}
+
+/***************************************************************************** */
 
 void print_client_details(struct sockaddr_in *client) {
   char ip_str[INET_ADDRSTRLEN];
@@ -211,99 +265,71 @@ void print_client_details(struct sockaddr_in *client) {
   printf("CLIENT DETAILS\nIP: %s\nPORT: %d\n", ip_str, port);
 }
 
-channel *create_channel(channels *channels, const char *channel_name) {
-  if (channels == NULL || channel_name == NULL) {
-    return NULL;
-  }
+// void print_channels(const channels *channel_list) {
+//   channel *current_channel = channel_list->channels_head;
+//   printf("[CHANNELS] ");
+//   while (current_channel != NULL) {
+//     printf("%s, ", current_channel->name);
+//     current_channel = current_channel->next;
+//   }
+//   printf("\n");
+// }
 
-  // Reallocate channels array to make room for new channel
-  channels->channels = (channel *)realloc(channels->channels, (channels->num_channels + 1) * sizeof(channel));
-
-  if (channels->channels == NULL) {
-    return NULL;
-  }
-
-  // Initialize the new channel
-  channel *new_channel = &channels->channels[channels->num_channels];
-
-  // Copy channel name
-  strncpy(new_channel->name, channel_name, CHANNEL_MAX_CHAR);
-  new_channel->name[CHANNEL_MAX_CHAR - 1] = '\0'; // Ensure null termination
-
-  // Initialize subscribed users array
-  new_channel->subbed_users = NULL;
-
-  // Increment channel count
-  channels->num_channels++;
-
-  return new_channel;
+void view_request(request *request, struct sockaddr_in *client) {
+  printf("\n");
+  print_client_details(client);
+  print_request(request);
+  printf("\n");
 }
 
-channel *find_channel(channels *channels, const char *channel_name) {
-  if (channels == NULL || channel_name == NULL) {
-    return NULL;
-  }
+void print_channels(const channels *channel_list) {
+  channel *current_channel = channel_list->channels_head;
+  printf("=== [CHANNELS] ===\n");
 
-  for (int i = 0; i < channels->num_channels; i++) {
-    if (strcmp(channels->channels[i].name, channel_name) == 0) {
-      return &channels->channels[i];
+  while (current_channel != NULL) {
+    printf("- %s\n↪ [USERS]", current_channel->name);
+
+    // Check if there are any users subscribed to this channel
+    if (current_channel->subbed_users_head == NULL) {
+      printf(" ERROR: No users subscribed.\n"); // THIS SHOULD NOT HAPPEN
+    } else {
+      // Iterate through each user subscribed to the current channel
+      subbed_user *current_subbed_user = current_channel->subbed_users_head;
+      while (current_subbed_user != NULL) {
+        printf(" %s |", current_subbed_user->user->username);
+        current_subbed_user = current_subbed_user->next;
+      }
+      printf("\n");
     }
-  }
 
-  return NULL; // Channel not found
+    // Move to the next channel
+    current_channel = current_channel->next;
+  }
 }
 
-int send_error(int sockfd, struct sockaddr_in *client, char *error_reason) {
-  text_error error_packet;
-  error_packet.txt_type = TXT_ERROR;
-  strncpy(error_packet.txt_error, error_reason, sizeof(error_packet.txt_error));
+void print_users(const users *user_list) {
+  user *current_user = user_list->users_head;
+  printf("=== [USERS] ===\n");
 
-  if ((sendto(sockfd, &error_packet, sizeof(error_packet), 0, (const struct sockaddr *)client, sizeof(*client))) < 0) {
-    perror("Failed to send to packet to client");
-    return EXIT_FAILURE;
-  }
+  while (current_user != NULL) {
+    printf("- %s\n↪ [CHANNELS]", current_user->username);
 
-  return SUCCESS;
-}
-
-int join_channel(channels *channels, user *target_user, const char *channel_name) {
-  // if (channels == NULL || target_user == NULL || channel_name == NULL) {
-  //   return FAILURE;
-  // }
-
-  // Find the channel
-  channel *target_channel = find_channel(channels, channel_name);
-  if (target_channel == NULL) {
-    return FAILURE;
-  }
-
-  // Check if user is already subscribed to this channel
-  for (int i = 0; i < target_user->n_subbed_channels; i++) {
-    if (strcmp(target_user->subbed_channels[i]->name, channel_name) == 0) {
-      return FAILURE;
+    // Check if there are any channels this user is subscribed to
+    if (current_user->subbed_channels_head == NULL) {
+      printf(" NONE\n");
+    } else {
+      // Iterate through each channel this user is subscribed to
+      subbed_channel *current_subbed_channel = current_user->subbed_channels_head;
+      while (current_subbed_channel != NULL) {
+        printf(" %s |", current_subbed_channel->channel->name);
+        current_subbed_channel = current_subbed_channel->next;
+      }
+      printf("\n");
     }
-  }
 
-  // Add channel to user's channels
-  target_user->subbed_channels =
-      (channel **)realloc(target_user->subbed_channels, ((target_user->n_subbed_channels + 1) * sizeof(channel *)));
-  if (target_user->subbed_channels == NULL) {
-    perror("(SERVER) >>> Realloc failed on subbed_channels");
-    return FAILURE;
+    // Move to the next user
+    current_user = current_user->next;
   }
-  target_user->subbed_channels[target_user->n_subbed_channels] = target_channel;
-  target_user->n_subbed_channels++;
-
-  // Add user to channel
-  target_channel->subbed_users = (user **)realloc(target_channel->subbed_users, ((target_channel->n_subbed_users + 1) * sizeof(user *)));
-  if (target_channel->subbed_users == NULL) {
-    perror("(SERVER) >>> Realloc failed on subbed_users");
-    return FAILURE;
-  }
-  target_channel->subbed_users[target_channel->n_subbed_users] = target_user;
-  target_channel->n_subbed_users++;
-
-  return SUCCESS;
 }
 
 #endif

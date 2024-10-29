@@ -8,44 +8,101 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-void view_request(request *request, struct sockaddr_in *client) {
-  printf("\n");
-  print_client_details(client);
-  print_request(request);
-  printf("\n");
-}
-
 int handle_request(int sockfd, request *request, struct sockaddr_in *client, users *users, channels *channels) {
-  view_request(request, client);
-
   if (request->req_type == REQ_LOGIN) {
-    // Register user in users list
-    request_login *rq_login = (request_login *)request;
+    request_login *req = (request_login *)request;
 
-    users->users = realloc(users->users, (users->num_users + 1) * sizeof(user));
-
-    if (users->users == NULL) {
-      perror("Failed to resize user array using realloc()");
-      return FAILURE;
+    user *new_user = create_user(users, req->username, client);
+    if (new_user == NULL) {
+      // TODO: Send error packet
     }
 
-    user *new_user = &users->users[users->num_users];
+    // Join user to common channel
+    join_channel(new_user, find_channel(channels, "common"));
 
-    strncpy(new_user->username, rq_login->username, USERNAME_MAX_CHAR);     // username
-    inet_ntop(AF_INET, &(client->sin_addr), new_user->ip, INET_ADDRSTRLEN); // IP
-    new_user->port = ntohs(client->sin_port);                               // Port
-    new_user->n_subbed_channels = 0;
-    new_user->subbed_channels = NULL;
-    users->num_users++;
+    print_users(users);
+    print_channels(channels);
+  } else if (request->req_type == REQ_JOIN) {
+    request_join *req = (request_join *)request;
 
-    if ((join_channel(channels, new_user, "common")) < 0) {
-      send_error(sockfd, client, "Failed to join common channel");
+    // if channel doesn't exist then create channel
+    if (find_channel(channels, req->channel) == NULL) {
+      create_channel(channels, req->channel);
+    }
+
+    join_channel(find_user(users, NULL, client), find_channel(channels, req->channel));
+
+    print_users(users);
+    print_channels(channels);
+  } else if (request->req_type == REQ_LEAVE) {
+    request_leave *req = (request_leave *)request;
+
+    channel *c = find_channel(channels, req->channel);
+    if (c == NULL) {
+      perror("Channel not found, could not leave channel");
+      // TODO: send an error packet
+    }
+
+    user *u = find_user(users, NULL, client);
+
+    leave_channel(u, c);
+
+    if (c->subbed_users_head == NULL && strncmp(c->name, "common", strlen("common")) != 0) {
+      delete_channel(channels, c);
     }
 
     print_users(users);
     print_channels(channels);
+  } else if (request->req_type == REQ_LOGOUT) {
+    request_leave *req = (request_leave *)request;
 
-    return SUCCESS;
+    user *u = find_user(users, NULL, client);
+
+    delete_user(users, u);
+
+    // Clean up empty channels after user deleted
+    for (channel *c = channels->channels_head; c != NULL; c = c->next) {
+      if (c->subbed_users_head == NULL) {
+        delete_channel(channels, c);
+      }
+    }
+
+    print_users(users);
+    print_channels(channels);
+  } else if (request->req_type == REQ_LIST) {
+    // char *str = malloc((MAX_NUM_CHANNELS * (CHANNEL_MAX_CHAR + 2)) + strlen("Existing channels:\n"));
+    // char *str = malloc(sizeof(char) * strlen("Existing channels:\n"));
+
+    // for (channel *c = channels->channels_head; c != NULL; c = c->next) {
+    //   size_t new_size = strlen(str) + strlen(c->name) + 3;
+    //   str = realloc(str, new_size);
+
+    //   strcat(str, "\t");
+    //   strcat(str, c->name);
+    //   strcat(str, "\n");
+    // }
+
+    text_list *res = malloc(sizeof(text_list));
+    res->txt_type = TXT_LIST;
+
+    int i = 0;
+    for (channel *c = channels->channels_head; c != NULL; c = c->next) {
+      i++;
+    }
+
+    res->n_channel = i;
+    res->channels = malloc(sizeof(channel_info) * i);
+
+    for (channel *c = channels->channels_head; c != NULL; c = c->next) {
+      // strcpy(res.channels[i].channel, c->name);
+      res->channels[i].channel[0] = 'R';
+      printf("CHANNEL REGISTERED: %s\n", res->channels[i].channel);
+    }
+
+    // print_text((text *)&res);
+    print_text_list(res);
+
+    sendto(sockfd, res, sizeof(*res), 0, (const struct sockaddr *)client, sizeof(&client));
   }
 
   return SUCCESS;
@@ -58,9 +115,8 @@ int main() {
     exit(EXIT_FAILURE);
   }
 
-  struct sockaddr_in server_addr, client_addr;
+  struct sockaddr_in server_addr;
   memset(&server_addr, 0, sizeof(server_addr));
-  memset(&client_addr, 0, sizeof(client_addr));
 
   // Filling server information
   server_addr.sin_family = AF_INET; // IPv4
@@ -76,37 +132,37 @@ int main() {
     goto fail_exit;
   }
 
-  unsigned int client_addr_len = sizeof(client_addr); // length of the client address
+  // unsigned int client_addr_len = sizeof(client_addr); // length of the client address
   char buffer[SERVER_BUFFER_SIZE];
 
-  users *users_list = malloc(sizeof(users));
-  channels *channels_list = malloc(sizeof(channels));
+  users *user_list = malloc(sizeof(users));
+  channels *channel_list = malloc(sizeof(channels));
 
-  users_list->num_users = 0;
-  users_list->users = NULL;
-  channels_list->num_channels = 0;
-  channels_list->channels = NULL;
-  create_channel(channels_list, "common");
+  // Create common channel
+  create_channel(channel_list, "common");
+
+  print_channels(channel_list);
 
   printf("SERVER STARTING...\n");
 
   while (1) {
-    memset(buffer, 0, sizeof(buffer));
+    // Reset client_addr
+    struct sockaddr_in client_addr;
     memset(&client_addr, 0, sizeof(client_addr));
+    unsigned int client_addr_len = sizeof(client_addr);
+
+    memset(buffer, 0, sizeof(buffer));
 
     // Receive message from client
-    int msg_len = recvfrom(sockfd, (char *)buffer, SERVER_BUFFER_SIZE, 0, (struct sockaddr *)&client_addr, &client_addr_len);
-
-    if (msg_len < 0) {
+    if ((recvfrom(sockfd, (char *)buffer, SERVER_BUFFER_SIZE, 0, (struct sockaddr *)&client_addr, &client_addr_len)) < 0) {
       perror("Failed to recieve message from client.");
       goto fail_exit;
     }
 
-    printf("MESSAGE LEN: %d\n", msg_len);
+    print_client_details(&client_addr);
+    print_request((request *)buffer);
 
-    buffer[msg_len] = '\0';
-
-    handle_request(sockfd, (request *)buffer, &client_addr, users_list, channels_list);
+    handle_request(sockfd, (request *)buffer, &client_addr, user_list, channel_list);
   }
 
   close(sockfd);

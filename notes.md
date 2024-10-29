@@ -1,3 +1,5 @@
+- CANNOT USE REALLOC AS IT BREAKS PREVIOUS REFERNECES CUZ OLD REFERENCES WILL POINT TO INVALID MEMORY. NEED TO USE LL OR SOMETHING ELSE
+
 - Have client send packet to server to know when it is exiting so server can stop sending it messages
 
 - Before displaying text, the client application should print many backspace characters ('\b' in C)
