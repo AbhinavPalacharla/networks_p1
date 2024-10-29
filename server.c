@@ -70,40 +70,72 @@ int handle_request(int sockfd, request *request, struct sockaddr_in *client, use
     print_users(users);
     print_channels(channels);
   } else if (request->req_type == REQ_LIST) {
-    // char *str = malloc((MAX_NUM_CHANNELS * (CHANNEL_MAX_CHAR + 2)) + strlen("Existing channels:\n"));
-    // char *str = malloc(sizeof(char) * strlen("Existing channels:\n"));
+    int num_channels = 0;
+    for (channel *c = channels->channels_head; c != NULL; c = c->next) {
+      num_channels++;
+    }
 
-    // for (channel *c = channels->channels_head; c != NULL; c = c->next) {
-    //   size_t new_size = strlen(str) + strlen(c->name) + 3;
-    //   str = realloc(str, new_size);
+    size_t size = sizeof(text_list) + (sizeof(channel_info) * num_channels);
 
-    //   strcat(str, "\t");
-    //   strcat(str, c->name);
-    //   strcat(str, "\n");
-    // }
+    text_list *res = (text_list *)malloc(size);
 
-    text_list *res = malloc(sizeof(text_list));
     res->txt_type = TXT_LIST;
+    res->n_channel = num_channels;
 
     int i = 0;
     for (channel *c = channels->channels_head; c != NULL; c = c->next) {
+      strncpy(res->channels[i].channel, c->name, CHANNEL_MAX_CHAR);
       i++;
     }
 
-    res->n_channel = i;
-    res->channels = malloc(sizeof(channel_info) * i);
-
-    for (channel *c = channels->channels_head; c != NULL; c = c->next) {
-      // strcpy(res.channels[i].channel, c->name);
-      res->channels[i].channel[0] = 'R';
-      printf("CHANNEL REGISTERED: %s\n", res->channels[i].channel);
-    }
-
-    // print_text((text *)&res);
-    print_text_list(res);
-
-    sendto(sockfd, res, sizeof(*res), 0, (const struct sockaddr *)client, sizeof(&client));
+    sendto(sockfd, res, size, 0, (const struct sockaddr *)client, sizeof(&client));
   }
+
+  // else if (request->req_type == REQ_LIST) {
+  //   // char *str = malloc((MAX_NUM_CHANNELS * (CHANNEL_MAX_CHAR + 2)) + strlen("Existing channels:\n"));
+  //   // char *str = malloc(sizeof(char) * strlen("Existing channels:\n"));
+
+  //   // for (channel *c = channels->channels_head; c != NULL; c = c->next) {
+  //   //   size_t new_size = strlen(str) + strlen(c->name) + 3;
+  //   //   str = realloc(str, new_size);
+
+  //   //   strcat(str, "\t");
+  //   //   strcat(str, c->name);
+  //   //   strcat(str, "\n");
+  //   // }
+
+  //   text_list res;
+  //   res.txt_type = TXT_LIST;
+
+  //   int num_channels = 0;
+  //   for (channel *c = channels->channels_head; c != NULL; c = c->next) {
+  //     num_channels++;
+  //   }
+
+  //   res.n_channel = num_channels;
+  //   res.channels = malloc(sizeof(channel_info) * num_channels);
+
+  //   int i = 0;
+  //   for (channel *c = channels->channels_head; c != NULL; c = c->next) {
+  //     strncpy(res.channels[i].channel, c->name, CHANNEL_MAX_CHAR);
+  //     // printf("CHANNEL REGISTERED: %s\n", res.channels[i].channel);
+  //     i++;
+  //   }
+
+  //   // print_text((text *)&res);
+  //   // print_text_list(&res);
+  //   //
+  //   printf("CHANNELS:\n");
+  //   for (int j = 0; j < res.n_channel; j++) {
+  //     printf("- %s\n", res.channels[i].channel);
+  //   }
+
+  //   print_text_list(&res);
+
+  //   ssize_t size = sizeof(text_list) + (sizeof(channel_info) * num_channels);
+
+  //   sendto(sockfd, &res, size, 0, (const struct sockaddr *)client, sizeof(&client));
+  // }
 
   return SUCCESS;
 }

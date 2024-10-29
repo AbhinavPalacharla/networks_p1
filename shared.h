@@ -30,8 +30,8 @@ void print_text_list(text_list *txt) {
     printf("NONE\n");
   } else {
     printf("\n");
-    for (int i = 0; i < txt->n_channel; i++) {
-      printf("    - %s\n", txt->channels[i].channel);
+    for (int k = 0; k < txt->n_channel; k++) {
+      printf("    - %s\n", txt->channels[k].channel);
     }
   }
 }

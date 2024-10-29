@@ -110,7 +110,7 @@ typedef struct _channel_info {
 typedef struct _text_list {
   TXT_TYPE txt_type; /* = TXT_LIST */
   int n_channel;
-  channel_info *channels;
+  channel_info channels[0];
 } packed text_list;
 
 /* This is a substructure used by text_who. */
