@@ -167,6 +167,33 @@ int handle_command(int sockfd, struct sockaddr_in servaddr, char *command, user_
   return SUCCESS;
 }
 
+int handle_response(text *response) {
+  if (response->txt_type == TXT_LIST) {
+    char *str = malloc(sizeof(char) * strlen("Existing channels:\n"));
+    strncpy(str, "Existing channels:\n", strlen("Existing channels:\n"));
+
+    text_list *res = (text_list *)response;
+
+    for (int i = 0; i < res->n_channel; i++) {
+      size_t new_size = strlen(str) + strlen(res->channels[i].channel) + 3;
+      str = realloc(str, new_size);
+
+      strcat(str, "\t");
+      strcat(str, res->channels[i].channel);
+      strcat(str, "\n");
+    }
+
+    printf("%s", str);
+  } else if (response->txt_type == TXT_WHO) {
+
+  } else if (response->txt_type == TXT_SAY) {
+
+  } else if (response->txt_type == TXT_ERROR) {
+  }
+
+  return SUCCESS;
+}
+
 int main(int argc, char **argv) {
   int sockfd;
   struct sockaddr_in servaddr;
@@ -234,13 +261,15 @@ int main(int argc, char **argv) {
         goto fail_exit;
       }
 
-      printf("NUM BYTES RECIEVED: %d\n", n);
+      // printf("NUM BYTES RECIEVED: %d\n", n);
 
       server_buffer[n] = '\0';
 
       text *server_msg = (text *)server_buffer;
 
-      print_text(server_msg);
+      // print_text(server_msg);
+
+      handle_response(server_msg);
 
       memset(server_buffer, 0, sizeof(server_buffer)); // clear server buffer for use in next server message
     }
