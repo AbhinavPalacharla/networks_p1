@@ -15,8 +15,10 @@ int send_message(int sockfd, struct sockaddr_in servaddr, user_info *user, char 
   request_say say_packet;
 
   say_packet.req_type = REQ_SAY;
-  strncpy(say_packet.channel, user->current_channel, strlen(user->current_channel));
-  strncpy(say_packet.text, msg, strlen(msg));
+  strcpy(say_packet.channel, user->current_channel);
+  strcpy(say_packet.text, msg);
+
+  print_request((request *)&say_packet);
 
   sendto(sockfd, &say_packet, sizeof(say_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
 
@@ -203,7 +205,31 @@ int handle_response(text *response) {
 
     printf("%s", str);
   } else if (response->txt_type == TXT_SAY) {
+    // Create a properly aligned local structure
+    text_say local_response;
+    memset(&local_response, 0, sizeof(text_say));
 
+    // Copy the data manually from the received buffer
+    unsigned char *buffer = (unsigned char *)response;
+    int offset = 0;
+
+    // Copy txt_type (4 bytes)
+    memcpy(&local_response.txt_type, buffer + offset, sizeof(TXT_TYPE));
+    offset += sizeof(TXT_TYPE);
+
+    // Copy channel (32 bytes)
+    memcpy(local_response.channel, buffer + offset, CHANNEL_MAX_CHAR);
+    offset += CHANNEL_MAX_CHAR;
+
+    // Copy username (32 bytes)
+    memcpy(local_response.username, buffer + offset, USERNAME_MAX_CHAR);
+    offset += USERNAME_MAX_CHAR;
+
+    // Copy text (64 bytes)
+    memcpy(local_response.text, buffer + offset, SAY_MAX_CHAR);
+
+    printf("DEBUG - Raw text received: '%s'\n", local_response.text);
+    printf("[%s][%s]: %s\n", local_response.channel, local_response.username, local_response.text);
   } else if (response->txt_type == TXT_ERROR) {
   }
 
@@ -213,9 +239,9 @@ int handle_response(text *response) {
 int main(int argc, char **argv) {
   int sockfd;
   struct sockaddr_in servaddr;
-  char server_buffer[SAY_MAX_CHAR];
+  char server_buffer[CLIENT_BUFFER_SIZE];
   // 10 extra chars as buffer to handle command or extra spaces, will be cleaned
-  char message_buffer[CLIENT_BUFFER_SIZE + 10];
+  char message_buffer[SAY_MAX_CHAR + 10];
   fd_set watch_fds;
   int maxfd;
   socklen_t len = sizeof(servaddr);
@@ -244,7 +270,7 @@ int main(int argc, char **argv) {
     // Default username for testing purposes...
     strncpy(user->username, "abhinavp", strlen("abhinavp"));
   }
-  strncpy(user->current_channel, "common", strlen("common")); // Default channel for user to join
+  strncpy(user->current_channel, "Common", strlen("Common")); // Default channel for user to join
 
   printf("CLIENT STARTING...\n");
 
@@ -270,24 +296,20 @@ int main(int argc, char **argv) {
 
     // Handle server activity
     if (FD_ISSET(sockfd, &watch_fds)) {
-      int n = recvfrom(sockfd, (char *)server_buffer, CLIENT_BUFFER_SIZE, 0, (struct sockaddr *)&servaddr, &len);
+      memset(server_buffer, 0, sizeof(server_buffer)); // clear server buffer for use in next server message
+
+      int n = recvfrom(sockfd, (char *)server_buffer, sizeof(server_buffer), 0, (struct sockaddr *)&servaddr, &len);
 
       if (n < 0) {
         perror("recvfrom() failed.");
         goto fail_exit;
       }
 
-      // printf("NUM BYTES RECIEVED: %d\n", n);
+      printf("NUM BYTES RECIEVED: %d\n", n);
 
-      server_buffer[n] = '\0';
+      print_text((text *)server_buffer);
 
-      text *server_msg = (text *)server_buffer;
-
-      print_text(server_msg);
-
-      handle_response(server_msg);
-
-      memset(server_buffer, 0, sizeof(server_buffer)); // clear server buffer for use in next server message
+      handle_response((text *)server_buffer);
     }
 
     // Handle client stdin activity
@@ -313,7 +335,8 @@ int main(int argc, char **argv) {
 
 success_exit:
   close(sockfd);
-  return 0;
+  // return 0;
+  exit(SUCCESS);
 
 fail_exit:
   close(sockfd);
