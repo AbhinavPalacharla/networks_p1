@@ -237,24 +237,16 @@ int handle_response(text *response) {
 }
 
 int main(int argc, char **argv) {
+  // Socket setup
   int sockfd;
-  struct sockaddr_in servaddr;
-  char server_buffer[CLIENT_BUFFER_SIZE];
-  // 10 extra chars as buffer to handle command or extra spaces, will be cleaned
-  char message_buffer[SAY_MAX_CHAR + 10];
-  fd_set watch_fds;
-  int maxfd;
-  socklen_t len = sizeof(servaddr);
-  int nErr = 0;
-
   if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
     perror("socket creation failed");
     exit(EXIT_FAILURE);
   }
 
+  // Server address setup
+  struct sockaddr_in servaddr;
   memset(&servaddr, 0, sizeof(servaddr));
-
-  // Configure server info
   servaddr.sin_family = AF_INET;
   servaddr.sin_port = htons(SERVER_PORT);
   if (inet_pton(AF_INET, SERVER_IP, &(servaddr.sin_addr)) <= 0) {
@@ -262,83 +254,81 @@ int main(int argc, char **argv) {
     goto fail_exit;
   }
 
-  // Configure user
+  // User setup
   user_info *user = (user_info *)malloc(sizeof(user_info));
   if (argc == 2) {
-    strncpy(user->username, argv[argc - 1], (sizeof(char) * 32));
+    strncpy(user->username, argv[argc - 1], USERNAME_MAX_CHAR);
   } else {
-    // Default username for testing purposes...
-    strncpy(user->username, "abhinavp", strlen("abhinavp"));
+    strncpy(user->username, "abhinavp", USERNAME_MAX_CHAR); // Default username
   }
-  strncpy(user->current_channel, "Common", strlen("Common")); // Default channel for user to join
+  strncpy(user->current_channel, "Common", CHANNEL_MAX_CHAR); // Default channel
 
   printf("CLIENT STARTING...\n");
 
-  // Automatically send login packet as last step of client initialization
+  // Send initial login packet
   send_packet(sockfd, servaddr, REQ_LOGIN, user, NULL);
 
-  // Send and recieve messages loop
+  // Buffer setup
+  char server_buffer[CLIENT_BUFFER_SIZE];
+  char message_buffer[SAY_MAX_CHAR + 10];
+  socklen_t len = sizeof(servaddr);
+
+  // Main loop
   while (1) {
-    // Configure fds to watch
+    // Setup select() monitoring
+    fd_set watch_fds;
     FD_ZERO(&watch_fds);
     FD_SET(sockfd, &watch_fds);
     FD_SET(STDIN_FILENO, &watch_fds);
+    int maxfd = (sockfd > STDIN_FILENO) ? sockfd : STDIN_FILENO;
 
-    maxfd = (sockfd > STDIN_FILENO) ? sockfd : STDIN_FILENO;
-
-    // Use select to wait for activity on either stdin or the socket
-    int activity = select(maxfd + 1, &watch_fds, NULL, NULL, NULL);
-
-    if (activity < 0) {
+    // Wait for activity on either socket or stdin
+    if (select(maxfd + 1, &watch_fds, NULL, NULL, NULL) < 0) {
       perror("select error");
       goto fail_exit;
     }
 
-    // Handle server activity
+    // Handle socket activity (server messages)
     if (FD_ISSET(sockfd, &watch_fds)) {
-      memset(server_buffer, 0, sizeof(server_buffer)); // clear server buffer for use in next server message
+      memset(server_buffer, 0, sizeof(server_buffer));
 
-      int n = recvfrom(sockfd, (char *)server_buffer, sizeof(server_buffer), 0, (struct sockaddr *)&servaddr, &len);
-
+      int n = recvfrom(sockfd, server_buffer, sizeof(server_buffer), 0, (struct sockaddr *)&servaddr, &len);
       if (n < 0) {
-        perror("recvfrom() failed.");
+        perror("recvfrom() failed");
         goto fail_exit;
       }
 
-      printf("NUM BYTES RECIEVED: %d\n", n);
-
+      printf("NUM BYTES RECEIVED: %d\n", n);
       print_text((text *)server_buffer);
-
       handle_response((text *)server_buffer);
     }
 
-    // Handle client stdin activity
+    // Handle stdin activity (user input)
     if (FD_ISSET(STDIN_FILENO, &watch_fds)) {
+      memset(message_buffer, 0, sizeof(message_buffer));
       fgets(message_buffer, sizeof(message_buffer), stdin);
-
       message_buffer[strcspn(message_buffer, "\n")] = '\0';
 
       if (message_buffer[0] == '/') {
-        if ((nErr = handle_command(sockfd, servaddr, message_buffer, user)) < 0) {
+        int result = handle_command(sockfd, servaddr, message_buffer, user);
+        if (result < 0) {
           goto fail_exit;
-        } else if (nErr == SUCCESS_EXIT) {
+        } else if (result == SUCCESS_EXIT) {
           goto success_exit;
         }
       } else {
-        // Normal message to user active channel
         send_message(sockfd, servaddr, user, message_buffer);
       }
-
-      memset(message_buffer, 0, sizeof(message_buffer)); // clear message buffer for use in next message
     }
   }
 
 success_exit:
   close(sockfd);
-  // return 0;
+  free(user);
   exit(SUCCESS);
 
 fail_exit:
   close(sockfd);
+  free(user);
   exit(EXIT_FAILURE);
 }

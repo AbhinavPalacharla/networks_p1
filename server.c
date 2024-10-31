@@ -2,6 +2,7 @@
 #include "duckchat.h"
 #include "shared.h"
 #include <arpa/inet.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -122,40 +123,75 @@ int handle_request(int sockfd, request *request, struct sockaddr_in *client, use
   } else if (request->req_type == REQ_SAY) {
     request_say *req = (request_say *)request;
 
-    // Create a packed buffer for sending
-    unsigned char buffer[sizeof(text_say)];
-    memset(buffer, 0, sizeof(buffer));
-
-    // Fill the buffer manually to ensure proper alignment
-    int offset = 0;
-
-    // Copy txt_type (4 bytes)
-    TXT_TYPE type = TXT_SAY;
-    memcpy(buffer + offset, &type, sizeof(TXT_TYPE));
-    offset += sizeof(TXT_TYPE);
-
-    // Copy channel (32 bytes)
-    memcpy(buffer + offset, req->channel, CHANNEL_MAX_CHAR);
-    offset += CHANNEL_MAX_CHAR;
-
-    // Copy username (32 bytes)
+    // Find the sending user
     user *sender = find_user(users, NULL, client);
     if (sender == NULL) {
       perror("Could not find user who sent message");
       return FAILURE;
     }
-    memcpy(buffer + offset, sender->username, USERNAME_MAX_CHAR);
-    offset += USERNAME_MAX_CHAR;
 
-    // Copy text (64 bytes)
-    memcpy(buffer + offset, req->text, SAY_MAX_CHAR);
+    // Find the channel
+    channel *target_channel = find_channel(channels, req->channel);
+    if (target_channel == NULL) {
+      perror("Could not find channel for message");
+      return FAILURE;
+    }
 
-    printf("DEBUG - Text being sent: '%s'\n", req->text);
+    text_say res;
+    res.txt_type = TXT_SAY;
+    strncpy(res.channel, req->channel, CHANNEL_MAX_CHAR);
+    strncpy(res.username, sender->username, USERNAME_MAX_CHAR);
+    strncpy(res.text, req->text, SAY_MAX_CHAR);
 
-    ssize_t bytes_sent = sendto(sockfd, buffer, sizeof(buffer), 0, (const struct sockaddr *)client, sizeof(*client));
+    // Send message to all users subscribed to the channel
+    for (subbed_user *sub = target_channel->subbed_users_head; sub != NULL; sub = sub->next) {
+      struct sockaddr_in recipient_addr;
+      memset(&recipient_addr, 0, sizeof(recipient_addr));
+      recipient_addr.sin_family = AF_INET;
+      recipient_addr.sin_port = htons(sub->user->port);
+      inet_pton(AF_INET, sub->user->ip, &recipient_addr.sin_addr);
 
-    printf("DEBUG - Bytes sent: %zd\n", bytes_sent);
+      sendto(sockfd, &res, sizeof(res), 0, (const struct sockaddr *)&recipient_addr, sizeof(recipient_addr));
+    }
   }
+
+  // else if (request->req_type == REQ_SAY) {
+  //   request_say *req = (request_say *)request;
+
+  //   // Create a packed buffer for sending
+  //   unsigned char buffer[sizeof(text_say)];
+  //   memset(buffer, 0, sizeof(buffer));
+
+  //   // Fill the buffer manually to ensure proper alignment
+  //   int offset = 0;
+
+  //   // Copy txt_type (4 bytes)
+  //   TXT_TYPE type = TXT_SAY;
+  //   memcpy(buffer + offset, &type, sizeof(TXT_TYPE));
+  //   offset += sizeof(TXT_TYPE);
+
+  //   // Copy channel (32 bytes)
+  //   memcpy(buffer + offset, req->channel, CHANNEL_MAX_CHAR);
+  //   offset += CHANNEL_MAX_CHAR;
+
+  //   // Copy username (32 bytes)
+  //   user *sender = find_user(users, NULL, client);
+  //   if (sender == NULL) {
+  //     perror("Could not find user who sent message");
+  //     return FAILURE;
+  //   }
+  //   memcpy(buffer + offset, sender->username, USERNAME_MAX_CHAR);
+  //   offset += USERNAME_MAX_CHAR;
+
+  //   // Copy text (64 bytes)
+  //   memcpy(buffer + offset, req->text, SAY_MAX_CHAR);
+
+  //   printf("DEBUG - Text being sent: '%s'\n", req->text);
+
+  //   ssize_t bytes_sent = sendto(sockfd, buffer, sizeof(buffer), 0, (const struct sockaddr *)client, sizeof(*client));
+
+  //   printf("DEBUG - Bytes sent: %zd\n", bytes_sent);
+  // }
 
   return SUCCESS;
 }
