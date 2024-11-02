@@ -15,8 +15,8 @@ int send_message(int sockfd, struct sockaddr_in servaddr, user_info *user, char 
   request_say say_packet;
 
   say_packet.req_type = REQ_SAY;
-  strcpy(say_packet.channel, user->current_channel);
-  strcpy(say_packet.text, msg);
+  strncpy(say_packet.channel, user->current_channel, CHANNEL_MAX_CHAR);
+  strncpy(say_packet.text, msg, SAY_MAX_CHAR);
 
   sendto(sockfd, &say_packet, sizeof(say_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
 
@@ -269,7 +269,7 @@ int main(int argc, char **argv) {
 
   // Buffer setup
   char server_buffer[CLIENT_BUFFER_SIZE];
-  char message_buffer[SAY_MAX_CHAR + 10];
+  char message_buffer[SAY_MAX_CHAR + 1];
   socklen_t len = sizeof(servaddr);
 
   printf("> ");
