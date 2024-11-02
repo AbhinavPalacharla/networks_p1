@@ -115,7 +115,7 @@ int handle_request(int sockfd, request *request, struct sockaddr_in *client, use
 
     int i = 0;
     for (subbed_user *u = c->subbed_users_head; u != NULL; u = u->next) {
-      strncpy(res->users->username, u->user->username, USERNAME_MAX_CHAR);
+      strncpy(res->users[i].username, u->user->username, USERNAME_MAX_CHAR);
       i++;
     }
 
@@ -154,44 +154,6 @@ int handle_request(int sockfd, request *request, struct sockaddr_in *client, use
       sendto(sockfd, &res, sizeof(res), 0, (const struct sockaddr *)&recipient_addr, sizeof(recipient_addr));
     }
   }
-
-  // else if (request->req_type == REQ_SAY) {
-  //   request_say *req = (request_say *)request;
-
-  //   // Create a packed buffer for sending
-  //   unsigned char buffer[sizeof(text_say)];
-  //   memset(buffer, 0, sizeof(buffer));
-
-  //   // Fill the buffer manually to ensure proper alignment
-  //   int offset = 0;
-
-  //   // Copy txt_type (4 bytes)
-  //   TXT_TYPE type = TXT_SAY;
-  //   memcpy(buffer + offset, &type, sizeof(TXT_TYPE));
-  //   offset += sizeof(TXT_TYPE);
-
-  //   // Copy channel (32 bytes)
-  //   memcpy(buffer + offset, req->channel, CHANNEL_MAX_CHAR);
-  //   offset += CHANNEL_MAX_CHAR;
-
-  //   // Copy username (32 bytes)
-  //   user *sender = find_user(users, NULL, client);
-  //   if (sender == NULL) {
-  //     perror("Could not find user who sent message");
-  //     return FAILURE;
-  //   }
-  //   memcpy(buffer + offset, sender->username, USERNAME_MAX_CHAR);
-  //   offset += USERNAME_MAX_CHAR;
-
-  //   // Copy text (64 bytes)
-  //   memcpy(buffer + offset, req->text, SAY_MAX_CHAR);
-
-  //   printf("DEBUG - Text being sent: '%s'\n", req->text);
-
-  //   ssize_t bytes_sent = sendto(sockfd, buffer, sizeof(buffer), 0, (const struct sockaddr *)client, sizeof(*client));
-
-  //   printf("DEBUG - Bytes sent: %zd\n", bytes_sent);
-  // }
 
   return SUCCESS;
 }

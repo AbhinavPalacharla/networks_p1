@@ -1,0 +1,35 @@
+---
+triple:          'arm64-apple-darwin'
+binary-path:     server
+relocations:
+  - { offsetInCU: 0x26, offset: 0x26, size: 0x8, addend: 0x0, symName: _print_text_say, symObjAddr: 0x0, symBinAddr: 0x100001C9C, symSize: 0x9C }
+  - { offsetInCU: 0x55E, offset: 0x55E, size: 0x8, addend: 0x0, symName: _print_text_say, symObjAddr: 0x0, symBinAddr: 0x100001C9C, symSize: 0x9C }
+  - { offsetInCU: 0x582, offset: 0x582, size: 0x8, addend: 0x0, symName: _print_text_list, symObjAddr: 0x9C, symBinAddr: 0x100001D38, symSize: 0x108 }
+  - { offsetInCU: 0x5C2, offset: 0x5C2, size: 0x8, addend: 0x0, symName: _print_text_who, symObjAddr: 0x1A4, symBinAddr: 0x100001E40, symSize: 0x124 }
+  - { offsetInCU: 0x602, offset: 0x602, size: 0x8, addend: 0x0, symName: _print_text_error, symObjAddr: 0x2C8, symBinAddr: 0x100001F64, symSize: 0x64 }
+  - { offsetInCU: 0x626, offset: 0x626, size: 0x8, addend: 0x0, symName: _print_text, symObjAddr: 0x32C, symBinAddr: 0x100001FC8, symSize: 0xCC }
+  - { offsetInCU: 0x64A, offset: 0x64A, size: 0x8, addend: 0x0, symName: _print_request_login, symObjAddr: 0x408, symBinAddr: 0x1000020A4, symSize: 0x64 }
+  - { offsetInCU: 0x66E, offset: 0x66E, size: 0x8, addend: 0x0, symName: _print_request_logout, symObjAddr: 0x46C, symBinAddr: 0x100002108, symSize: 0x48 }
+  - { offsetInCU: 0x692, offset: 0x692, size: 0x8, addend: 0x0, symName: _print_request_join, symObjAddr: 0x4B4, symBinAddr: 0x100002150, symSize: 0x64 }
+  - { offsetInCU: 0x6B6, offset: 0x6B6, size: 0x8, addend: 0x0, symName: _print_request_leave, symObjAddr: 0x518, symBinAddr: 0x1000021B4, symSize: 0x64 }
+  - { offsetInCU: 0x6DA, offset: 0x6DA, size: 0x8, addend: 0x0, symName: _print_request_say, symObjAddr: 0x57C, symBinAddr: 0x100002218, symSize: 0x80 }
+  - { offsetInCU: 0x6FE, offset: 0x6FE, size: 0x8, addend: 0x0, symName: _print_request_list, symObjAddr: 0x5FC, symBinAddr: 0x100002298, symSize: 0x48 }
+  - { offsetInCU: 0x722, offset: 0x722, size: 0x8, addend: 0x0, symName: _print_request_who, symObjAddr: 0x644, symBinAddr: 0x1000022E0, symSize: 0x64 }
+  - { offsetInCU: 0x746, offset: 0x746, size: 0x8, addend: 0x0, symName: _print_request_keep_alive, symObjAddr: 0x6A8, symBinAddr: 0x100002344, symSize: 0x48 }
+  - { offsetInCU: 0x76A, offset: 0x76A, size: 0x8, addend: 0x0, symName: _print_request, symObjAddr: 0x6F0, symBinAddr: 0x10000238C, symSize: 0xD8 }
+  - { offsetInCU: 0x78E, offset: 0x78E, size: 0x8, addend: 0x0, symName: _find_channel, symObjAddr: 0x7E8, symBinAddr: 0x100002484, symSize: 0x8C }
+  - { offsetInCU: 0x7D2, offset: 0x7D2, size: 0x8, addend: 0x0, symName: _create_channel, symObjAddr: 0x874, symBinAddr: 0x100002510, symSize: 0xE8 }
+  - { offsetInCU: 0x816, offset: 0x816, size: 0x8, addend: 0x0, symName: _join_channel, symObjAddr: 0x95C, symBinAddr: 0x1000025F8, symSize: 0x124 }
+  - { offsetInCU: 0x864, offset: 0x864, size: 0x8, addend: 0x0, symName: _leave_channel, symObjAddr: 0xA80, symBinAddr: 0x10000271C, symSize: 0x1C0 }
+  - { offsetInCU: 0x8B2, offset: 0x8B2, size: 0x8, addend: 0x0, symName: _find_user, symObjAddr: 0xC40, symBinAddr: 0x1000028DC, symSize: 0x18C }
+  - { offsetInCU: 0x920, offset: 0x920, size: 0x8, addend: 0x0, symName: __OSSwapInt16, symObjAddr: 0xDCC, symBinAddr: 0x100002A68, symSize: 0x24 }
+  - { offsetInCU: 0x948, offset: 0x948, size: 0x8, addend: 0x0, symName: _create_user, symObjAddr: 0xDF0, symBinAddr: 0x100002A8C, symSize: 0x134 }
+  - { offsetInCU: 0x99A, offset: 0x99A, size: 0x8, addend: 0x0, symName: _delete_user, symObjAddr: 0xF24, symBinAddr: 0x100002BC0, symSize: 0xF8 }
+  - { offsetInCU: 0x9F6, offset: 0x9F6, size: 0x8, addend: 0x0, symName: _delete_channel, symObjAddr: 0x101C, symBinAddr: 0x100002CB8, symSize: 0xE8 }
+  - { offsetInCU: 0xA2C, offset: 0xA2C, size: 0x8, addend: 0x0, symName: _print_client_details, symObjAddr: 0x1104, symBinAddr: 0x100002DA0, symSize: 0xB0 }
+  - { offsetInCU: 0xA70, offset: 0xA70, size: 0x8, addend: 0x0, symName: _view_request, symObjAddr: 0x11B4, symBinAddr: 0x100002E50, symSize: 0x48 }
+  - { offsetInCU: 0xAA5, offset: 0xAA5, size: 0x8, addend: 0x0, symName: _print_channels, symObjAddr: 0x11FC, symBinAddr: 0x100002E98, symSize: 0xFC }
+  - { offsetInCU: 0xAF7, offset: 0xAF7, size: 0x8, addend: 0x0, symName: _print_users, symObjAddr: 0x12F8, symBinAddr: 0x100002F94, symSize: 0xFC }
+  - { offsetInCU: 0xB49, offset: 0xB49, size: 0x8, addend: 0x0, symName: _handle_request, symObjAddr: 0x13F4, symBinAddr: 0x100003090, symSize: 0x784 }
+  - { offsetInCU: 0xE25, offset: 0xE25, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x1B78, symBinAddr: 0x100003814, symSize: 0x1D8 }
+...

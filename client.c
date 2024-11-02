@@ -18,8 +18,6 @@ int send_message(int sockfd, struct sockaddr_in servaddr, user_info *user, char 
   strcpy(say_packet.channel, user->current_channel);
   strcpy(say_packet.text, msg);
 
-  print_request((request *)&say_packet);
-
   sendto(sockfd, &say_packet, sizeof(say_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
 
   return SUCCESS;
@@ -106,6 +104,9 @@ int handle_command(int sockfd, struct sockaddr_in servaddr, char *command, user_
 
     send_packet(sockfd, servaddr, REQ_JOIN, user, channel);
 
+    printf("> ");
+    fflush(stdout);
+
   } else if (strncmp(command, "/leave", strlen("/leave")) == 0) {
 
     char *channel = command + strlen("/leave");
@@ -120,6 +121,9 @@ int handle_command(int sockfd, struct sockaddr_in servaddr, char *command, user_
     }
 
     send_packet(sockfd, servaddr, REQ_LEAVE, user, channel);
+
+    printf("> ");
+    fflush(stdout);
 
   } else if (strncmp(command, "/list", strlen("/list")) == 0) {
 
@@ -161,8 +165,14 @@ int handle_command(int sockfd, struct sockaddr_in servaddr, char *command, user_
     strncpy(user->current_channel, channel, CHANNEL_MAX_CHAR);
     printf("Switched to channel: %s\n", channel);
 
+    printf("> ");
+    fflush(stdout);
+
   } else {
     printf("(CLIENT) >>> ERROR: Unknown command\n");
+
+    printf("> ");
+    fflush(stdout);
     return NON_FATAL_ERR;
   }
 
@@ -185,6 +195,8 @@ int handle_response(text *response) {
       strcat(str, "\n");
     }
 
+    printf("\r\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
+
     printf("%s", str);
   } else if (response->txt_type == TXT_WHO) {
     text_who *res = (text_who *)response;
@@ -203,35 +215,22 @@ int handle_response(text *response) {
       strcat(str, "\n");
     }
 
+    printf("\r\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
+
     printf("%s", str);
   } else if (response->txt_type == TXT_SAY) {
-    // Create a properly aligned local structure
-    text_say local_response;
-    memset(&local_response, 0, sizeof(text_say));
+    text_say *res = (text_say *)response;
 
-    // Copy the data manually from the received buffer
-    unsigned char *buffer = (unsigned char *)response;
-    int offset = 0;
+    printf("\r\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
 
-    // Copy txt_type (4 bytes)
-    memcpy(&local_response.txt_type, buffer + offset, sizeof(TXT_TYPE));
-    offset += sizeof(TXT_TYPE);
+    printf("[%s][%s]: %s\n", res->channel, res->username, res->text);
 
-    // Copy channel (32 bytes)
-    memcpy(local_response.channel, buffer + offset, CHANNEL_MAX_CHAR);
-    offset += CHANNEL_MAX_CHAR;
-
-    // Copy username (32 bytes)
-    memcpy(local_response.username, buffer + offset, USERNAME_MAX_CHAR);
-    offset += USERNAME_MAX_CHAR;
-
-    // Copy text (64 bytes)
-    memcpy(local_response.text, buffer + offset, SAY_MAX_CHAR);
-
-    printf("DEBUG - Raw text received: '%s'\n", local_response.text);
-    printf("[%s][%s]: %s\n", local_response.channel, local_response.username, local_response.text);
   } else if (response->txt_type == TXT_ERROR) {
+    // TODO: Handle Error Messages
   }
+
+  printf("> ");
+  fflush(stdout);
 
   return SUCCESS;
 }
@@ -273,6 +272,8 @@ int main(int argc, char **argv) {
   char message_buffer[SAY_MAX_CHAR + 10];
   socklen_t len = sizeof(servaddr);
 
+  printf("> ");
+  fflush(stdout);
   // Main loop
   while (1) {
     // Setup select() monitoring
@@ -298,8 +299,8 @@ int main(int argc, char **argv) {
         goto fail_exit;
       }
 
-      printf("NUM BYTES RECEIVED: %d\n", n);
-      print_text((text *)server_buffer);
+      // printf("NUM BYTES RECEIVED: %d\n", n);
+      // print_text((text *)server_buffer);
       handle_response((text *)server_buffer);
     }
 
