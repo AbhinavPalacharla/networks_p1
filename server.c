@@ -89,6 +89,8 @@ int handle_request(int sockfd, request *request, struct sockaddr_in *client, use
       i++;
     }
 
+    print_text_list(res);
+
     sendto(sockfd, res, size, 0, (const struct sockaddr *)client, sizeof(&client));
   } else if (request->req_type == REQ_WHO) {
     request_who *req = (request_who *)request;
@@ -118,6 +120,8 @@ int handle_request(int sockfd, request *request, struct sockaddr_in *client, use
       strncpy(res->users[i].username, u->user->username, USERNAME_MAX_CHAR);
       i++;
     }
+
+    print_text_who(res);
 
     sendto(sockfd, res, size, 0, (const struct sockaddr *)client, sizeof(&client));
   } else if (request->req_type == REQ_SAY) {

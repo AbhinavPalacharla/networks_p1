@@ -1,4 +1,5 @@
 *.out
-my_*
+my_client
+my_server
 .clang-format
 .zed
