@@ -48,7 +48,7 @@ int handle_request(int sockfd, request *request, struct sockaddr_in *client, use
 
     leave_channel(u, c);
 
-    if (c->subbed_users_head == NULL && strncmp(c->name, "common", strlen("common")) != 0) {
+    if (c->subbed_users_head == NULL && strncmp(c->name, "Common", strlen("Common")) != 0) {
       delete_channel(channels, c);
     }
 
