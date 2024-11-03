@@ -91,7 +91,9 @@ int handle_request(int sockfd, request *request, struct sockaddr_in *client, use
 
     print_text_list(res);
 
-    sendto(sockfd, res, size, 0, (const struct sockaddr *)client, sizeof(&client));
+    int n = sendto(sockfd, res, size, 0, (const struct sockaddr *)client, sizeof(&client));
+
+    printf("SENT %d BYTES\n", n);
   } else if (request->req_type == REQ_WHO) {
     request_who *req = (request_who *)request;
 

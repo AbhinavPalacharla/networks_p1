@@ -233,6 +233,8 @@ int handle_command(int sockfd, struct sockaddr_in servaddr, char *command, user 
 
     send_packet(sockfd, servaddr, REQ_LIST, user, NULL);
 
+    printf("DONE\n");
+
   } else if (strcmp(cmd_name, "/who") == 0) {
     if (!argument) {
       printf("(CLIENT) >>> ERROR: Please provide a channel name. Usage: /who [channel]\n");
