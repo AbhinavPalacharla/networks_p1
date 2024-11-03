@@ -92,14 +92,15 @@ int handle_request(int sockfd, request *request, struct sockaddr_in *client, use
 
     print_text_list(res);
 
-    int n = sendto(sockfd, res, size, 0, (const struct sockaddr *)client, sizeof(struct sockaddr_in));
+    // int n =
+    sendto(sockfd, res, size, 0, (const struct sockaddr *)client, sizeof(struct sockaddr_in));
 
-    if (n < 0) {
-      perror("sendto error");
-      printf("ERROR CODE: %d\n", errno);
-    }
+    // if (n < 0) {
+    //   perror("sendto error");
+    //   printf("ERROR CODE: %d\n", errno);
+    // }
 
-    printf("SENT %d BYTES\n", n);
+    // printf("SENT %d BYTES\n", n);
   } else if (request->req_type == REQ_WHO) {
     request_who *req = (request_who *)request;
 

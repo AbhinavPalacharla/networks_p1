@@ -463,9 +463,9 @@ int main(int argc, char **argv) {
         goto fail_exit;
       }
 
-      printf("NUM BYTES RECEIVED: %d\n", n);
-      print_text((text *)server_buffer);
-      printf("\n\n\n");
+      // printf("NUM BYTES RECEIVED: %d\n", n);
+      // print_text((text *)server_buffer);
+      // printf("\n\n\n");
       // handle_response((text *)server_buffer);
       handle_response((text *)server_buffer, user);
     }
