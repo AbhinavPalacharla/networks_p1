@@ -10,45 +10,125 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+int send_error(int sockfd, struct sockaddr_in *client, char *msg) {
+  text_error res;
+
+  res.txt_type = TXT_ERROR;
+  strncpy(res.txt_error, msg, SAY_MAX_CHAR);
+
+  sendto(sockfd, &res, sizeof(res), 0, (const struct sockaddr *)client, sizeof(struct sockaddr_in));
+
+  return SUCCESS;
+}
+
 int handle_request(int sockfd, request *request, struct sockaddr_in *client, users *users, channels *channels) {
   if (request->req_type == REQ_LOGIN) {
     request_login *req = (request_login *)request;
 
+    if (strlen(req->username) > USERNAME_MAX_CHAR) {
+      send_error(sockfd, client, "Invalid username");
+      return NON_FATAL_ERR;
+    }
+
     user *new_user = create_user(users, req->username, client);
     if (new_user == NULL) {
       // TODO: Send error packet
+      send_error(sockfd, client, "User already exists");
+      return NON_FATAL_ERR;
+    }
+
+    channel *c = find_channel(channels, "Common");
+
+    // Check if user is already in channel
+    for (subbed_user *sub = c->subbed_users_head; sub != NULL; sub = sub->next) {
+      if (sub->user == new_user) {
+        send_error(sockfd, client, "Already in channel");
+        return NON_FATAL_ERR;
+      }
     }
 
     // Join user to common channel
-    join_channel(new_user, find_channel(channels, "Common"));
+    join_channel(new_user, c);
 
     print_users(users);
     print_channels(channels);
   } else if (request->req_type == REQ_JOIN) {
     request_join *req = (request_join *)request;
 
+    if (strlen(req->channel) > CHANNEL_MAX_CHAR) {
+      send_error(sockfd, client, "Invalid channel name");
+      return NON_FATAL_ERR;
+    }
+
     // if channel doesn't exist then create channel
     if (find_channel(channels, req->channel) == NULL) {
       create_channel(channels, req->channel);
     }
 
-    join_channel(find_user(users, NULL, client), find_channel(channels, req->channel));
+    user *u = find_user(users, NULL, client);
+
+    if (u == NULL) {
+      send_error(sockfd, client, "User not logged in");
+      return NON_FATAL_ERR;
+    }
+
+    channel *c = find_channel(channels, req->channel);
+
+    if (c == NULL) {
+      send_error(sockfd, client, "Channel doesn't exist");
+      return NON_FATAL_ERR;
+    }
+
+    // Check if user is already in channel
+    for (subbed_user *sub = c->subbed_users_head; sub != NULL; sub = sub->next) {
+      if (sub->user == u) {
+        send_error(sockfd, client, "Already in channel");
+        return NON_FATAL_ERR;
+      }
+    }
+
+    join_channel(u, c);
 
     print_users(users);
     print_channels(channels);
   } else if (request->req_type == REQ_LEAVE) {
     request_leave *req = (request_leave *)request;
 
+    if (strlen(req->channel) > CHANNEL_MAX_CHAR) {
+      send_error(sockfd, client, "Invalid channel name");
+      return NON_FATAL_ERR;
+    }
+
     channel *c = find_channel(channels, req->channel);
+
     if (c == NULL) {
-      perror("Channel not found, could not leave channel");
-      // TODO: send an error packet
+      send_error(sockfd, client, "Channel doesn't exist");
+      return NON_FATAL_ERR;
     }
 
     user *u = find_user(users, NULL, client);
 
+    if (u == NULL) {
+      send_error(sockfd, client, "User not logged in");
+      return NON_FATAL_ERR;
+    }
+
+    int is_subscribed = 0;
+    for (subbed_user *sub = c->subbed_users_head; sub != NULL; sub = sub->next) {
+      if (sub->user == u) {
+        is_subscribed = 1;
+        break;
+      }
+    }
+
+    if (!is_subscribed) {
+      send_error(sockfd, client, "User not subscribed to channel");
+      return NON_FATAL_ERR;
+    }
+
     leave_channel(u, c);
 
+    // Prune channels with no users unless it is Common channel
     if (c->subbed_users_head == NULL && strncmp(c->name, "Common", strlen("Common")) != 0) {
       delete_channel(channels, c);
     }
@@ -58,7 +138,12 @@ int handle_request(int sockfd, request *request, struct sockaddr_in *client, use
   } else if (request->req_type == REQ_LOGOUT) {
     request_leave *req = (request_leave *)request;
 
-    user *u = find_user(users, NULL, client);
+    user *u;
+
+    if ((u = find_user(users, NULL, client)) == NULL) {
+      send_error(sockfd, client, "User not logged in");
+      return NON_FATAL_ERR;
+    }
 
     delete_user(users, u);
 
@@ -92,23 +177,15 @@ int handle_request(int sockfd, request *request, struct sockaddr_in *client, use
 
     print_text_list(res);
 
-    // int n =
     sendto(sockfd, res, size, 0, (const struct sockaddr *)client, sizeof(struct sockaddr_in));
-
-    // if (n < 0) {
-    //   perror("sendto error");
-    //   printf("ERROR CODE: %d\n", errno);
-    // }
-
-    // printf("SENT %d BYTES\n", n);
   } else if (request->req_type == REQ_WHO) {
     request_who *req = (request_who *)request;
 
     channel *c = find_channel(channels, req->channel);
 
     if (c == NULL) {
-      perror("Channel for /who not found");
-      // TODO: send error packet
+      send_error(sockfd, client, "Channel for /who not found");
+      return NON_FATAL_ERR;
     }
 
     int num_users = 0;
@@ -130,9 +207,6 @@ int handle_request(int sockfd, request *request, struct sockaddr_in *client, use
       i++;
     }
 
-    print_text_who(res);
-
-    // sendto(sockfd, res, size, 0, (const struct sockaddr *)client, sizeof(&client));
     sendto(sockfd, res, size, 0, (const struct sockaddr *)client, sizeof(struct sockaddr_in));
   } else if (request->req_type == REQ_SAY) {
     request_say *req = (request_say *)request;
@@ -140,15 +214,15 @@ int handle_request(int sockfd, request *request, struct sockaddr_in *client, use
     // Find the sending user
     user *sender = find_user(users, NULL, client);
     if (sender == NULL) {
-      perror("Could not find user who sent message");
-      return FAILURE;
+      send_error(sockfd, client, "User not logged in");
+      return NON_FATAL_ERR;
     }
 
     // Find the channel
     channel *target_channel = find_channel(channels, req->channel);
     if (target_channel == NULL) {
-      perror("Could not find channel for message");
-      return FAILURE;
+      send_error(sockfd, client, "Channel not found");
+      return NON_FATAL_ERR;
     }
 
     text_say res;

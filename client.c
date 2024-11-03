@@ -378,6 +378,10 @@ int handle_response(text *response, user *user) {
 
     printf("\r\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
     printf("(SERVER) >>> ERROR: %s\n", res->txt_error);
+
+    if (strstr(res->txt_error, "User already exists") || strstr(res->txt_error, "Invalid username")) {
+      exit(EXIT_FAILURE);
+    }
   }
 
   printf("> ");
@@ -494,6 +498,7 @@ int main(int argc, char **argv) {
 
       if (message_buffer[0] == '/') {
         int result = handle_command(sockfd, servaddr, message_buffer, user);
+        printf("RESULT: %d\n", result);
         if (result < 0) {
           goto fail_exit;
         } else if (result == SUCCESS_EXIT) {

@@ -8,9 +8,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define PORT 4949
-#define SERVER_IP "127.0.0.1"
-
 // Largest packet server recieves is say_request
 // 4 byte =  packet identifier
 // 32 byte = channel name
@@ -264,16 +261,6 @@ void print_client_details(struct sockaddr_in *client) {
 
   printf("CLIENT DETAILS\nIP: %s\nPORT: %d\n", ip_str, port);
 }
-
-// void print_channels(const channels *channel_list) {
-//   channel *current_channel = channel_list->channels_head;
-//   printf("[CHANNELS] ");
-//   while (current_channel != NULL) {
-//     printf("%s, ", current_channel->name);
-//     current_channel = current_channel->next;
-//   }
-//   printf("\n");
-// }
 
 void view_request(request *request, struct sockaddr_in *client) {
   printf("\n");
