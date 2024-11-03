@@ -80,116 +80,284 @@ int send_packet(int sockfd, struct sockaddr_in servaddr, int packet_type, user_i
   return SUCCESS;
 }
 
+// int handle_command(int sockfd, struct sockaddr_in servaddr, char *command, user_info *user) {
+
+//   // Check for (/) commands from user
+//   if (strncmp(command, "/exit", strlen("/exit")) == 0) {
+
+//     send_packet(sockfd, servaddr, REQ_LOGOUT, NULL, NULL);
+
+//     printf("Exiting...\n");
+//     return SUCCESS_EXIT;
+
+//   } else if (strncmp(command, "/join", strlen("/join")) == 0) {
+
+//     char *channel = command + strlen("/join");
+//     // Skip leading whitespace
+//     while (*channel == ' ') {
+//       channel++;
+//     }
+//     // Check if channel name is provided
+//     if (*channel == '\0') {
+//       printf("(CLIENT) >>> ERROR: Please provide a channel name to join.\nUsage: /join [channel]\n");
+//       return NON_FATAL_ERR;
+//     }
+
+//     if (strlen(channel) > CHANNEL_MAX_CHAR) {
+//       printf("(CLIENT) >>> ERROR: Channel name > %d characters.\n", CHANNEL_MAX_CHAR);
+//       return NON_FATAL_ERR;
+//     }
+
+//     send_packet(sockfd, servaddr, REQ_JOIN, user, channel);
+
+//     printf("> ");
+//     fflush(stdout);
+
+//   } else if (strncmp(command, "/leave", strlen("/leave")) == 0) {
+
+//     char *channel = command + strlen("/leave");
+//     // Skip leading whitespace
+//     while (*channel == ' ') {
+//       channel++;
+//     }
+//     // Check if channel name is provided
+//     if (*channel == '\0') {
+//       printf("(CLIENT) >>> ERROR: Please provide a channel name to leave.\nUsage: /leave [channel]\n");
+//       return NON_FATAL_ERR;
+//     }
+
+//     if (strlen(channel) > CHANNEL_MAX_CHAR) {
+//       printf("(CLIENT) >>> ERROR: Channel name > %d characters.\n", CHANNEL_MAX_CHAR);
+//       return NON_FATAL_ERR;
+//     }
+
+//     send_packet(sockfd, servaddr, REQ_LEAVE, user, channel);
+
+//     printf("> ");
+//     fflush(stdout);
+
+//   } else if (strncmp(command, "/list", strlen("/list")) == 0) {
+
+//     send_packet(sockfd, servaddr, REQ_LIST, user, NULL);
+
+//   } else if (strncmp(command, "/who", strlen("/who")) == 0) {
+
+//     char *channel = command + strlen("/who");
+//     // Skip leading whitespace
+//     while (*channel == ' ') {
+//       channel++;
+//     }
+//     // Check if channel name is provided
+//     if (*channel == '\0') {
+//       printf("(CLIENT) >>> ERROR: Please provide a channel name.\nUsage: /who [channel]\n");
+//       return NON_FATAL_ERR;
+//     }
+
+//     if (strlen(channel) > CHANNEL_MAX_CHAR) {
+//       printf("(CLIENT) >>> ERROR: Channel name > %d characters.\n", CHANNEL_MAX_CHAR);
+//       return NON_FATAL_ERR;
+//     }
+
+//     // TODO: On server make sure channel exists otherwise throw error
+
+//     send_packet(sockfd, servaddr, REQ_WHO, user, channel);
+
+//   } else if (strncmp(command, "/switch", strlen("/switch")) == 0) {
+
+//     char *channel = command + strlen("/switch");
+
+//     // Skip leading whitespace
+//     while (*channel == ' ') {
+//       channel++;
+//     }
+
+//     // Check if channel name is provided
+//     if (*channel == '\0') {
+//       printf("(CLIENT) >>> ERROR: Please provide a channel name to switch to.\nUsage: /switch [channel]\n");
+//       return NON_FATAL_ERR;
+//     }
+
+//     if (strlen(channel) > CHANNEL_MAX_CHAR) {
+//       printf("(CLIENT) >>> ERROR: Channel name > %d characters.\n", CHANNEL_MAX_CHAR);
+//       return NON_FATAL_ERR;
+//     }
+
+//     // TODO: Make sure user is subscribed to channel before using /switch to the channel
+
+//     // Update user's current channel
+//     strncpy(user->current_channel, channel, CHANNEL_MAX_CHAR);
+//     printf("Switched to channel: %s\n", channel);
+
+//     printf("> ");
+//     fflush(stdout);
+
+//   } else {
+//     printf("(CLIENT) >>> ERROR: Unknown command\n");
+
+//     printf("> ");
+//     fflush(stdout);
+//     return NON_FATAL_ERR;
+//   }
+
+//   return SUCCESS;
+// }
+//
+
 int handle_command(int sockfd, struct sockaddr_in servaddr, char *command, user_info *user) {
-  // Check for (/) commands from user
-  if (strncmp(command, "/exit", strlen("/exit")) == 0) {
-
-    send_packet(sockfd, servaddr, REQ_LOGOUT, NULL, NULL);
-
-    printf("Exiting...\n");
-    return SUCCESS_EXIT;
-
-  } else if (strncmp(command, "/join", strlen("/join")) == 0) {
-
-    char *channel = command + strlen("/join");
-    // Skip leading whitespace
-    while (*channel == ' ') {
-      channel++;
-    }
-    // Check if channel name is provided
-    if (*channel == '\0') {
-      printf("(CLIENT) >>> ERROR: Please provide a channel name to join.\nUsage: /join [channel]\n");
-      return NON_FATAL_ERR;
-    }
-
-    if (strlen(channel) > CHANNEL_MAX_CHAR) {
-      printf("(CLIENT) >>> ERROR: Channel name > %d characters.\n", CHANNEL_MAX_CHAR);
-    }
-
-    send_packet(sockfd, servaddr, REQ_JOIN, user, channel);
-
-    printf("> ");
-    fflush(stdout);
-
-  } else if (strncmp(command, "/leave", strlen("/leave")) == 0) {
-
-    char *channel = command + strlen("/leave");
-    // Skip leading whitespace
-    while (*channel == ' ') {
-      channel++;
-    }
-    // Check if channel name is provided
-    if (*channel == '\0') {
-      printf("(CLIENT) >>> ERROR: Please provide a channel name to leave.\nUsage: /leave [channel]\n");
-      return NON_FATAL_ERR;
-    }
-
-    if (strlen(channel) > CHANNEL_MAX_CHAR) {
-      printf("(CLIENT) >>> ERROR: Channel name > %d characters.\n", CHANNEL_MAX_CHAR);
-    }
-
-    send_packet(sockfd, servaddr, REQ_LEAVE, user, channel);
-
-    printf("> ");
-    fflush(stdout);
-
-  } else if (strncmp(command, "/list", strlen("/list")) == 0) {
-
-    send_packet(sockfd, servaddr, REQ_LIST, user, NULL);
-
-  } else if (strncmp(command, "/who", strlen("/who")) == 0) {
-
-    char *channel = command + strlen("/who");
-    // Skip leading whitespace
-    while (*channel == ' ') {
-      channel++;
-    }
-    // Check if channel name is provided
-    if (*channel == '\0') {
-      printf("(CLIENT) >>> ERROR: Please provide a channel name.\nUsage: /who [channel]\n");
-      return NON_FATAL_ERR;
-    }
-
-    // TODO: On server make sure channel exists otherwise throw error
-
-    send_packet(sockfd, servaddr, REQ_WHO, user, channel);
-
-  } else if (strncmp(command, "/switch", strlen("/switch")) == 0) {
-
-    char *channel = command + strlen("/switch");
-
-    // Skip leading whitespace
-    while (*channel == ' ') {
-      channel++;
-    }
-
-    // Check if channel name is provided
-    if (*channel == '\0') {
-      printf("(CLIENT) >>> ERROR: Please provide a channel name to switch to.\nUsage: /switch [channel]\n");
-      return NON_FATAL_ERR;
-    }
-
-    if (strlen(channel) > CHANNEL_MAX_CHAR) {
-      printf("(CLIENT) >>> ERROR: Channel name > %d characters.\n", CHANNEL_MAX_CHAR);
-    }
-
-    // TODO: Make sure user is subscribed to channel before using /switch to the channel
-
-    // Update user's current channel
-    strncpy(user->current_channel, channel, CHANNEL_MAX_CHAR);
-    printf("Switched to channel: %s\n", channel);
-
-    printf("> ");
-    fflush(stdout);
-
-  } else {
-    printf("(CLIENT) >>> ERROR: Unknown command\n");
-
+  char *cmd_copy = strdup(command); // Create a copy since strtok modifies the string
+  if (!cmd_copy) {
+    printf("(CLIENT) >>> ERROR: Memory allocation failed\n");
     printf("> ");
     fflush(stdout);
     return NON_FATAL_ERR;
   }
 
+  // Get command name (first token)
+  char *cmd_name = strtok(cmd_copy, " \t\n");
+  if (!cmd_name) {
+    free(cmd_copy);
+    printf("> ");
+    fflush(stdout);
+    return NON_FATAL_ERR;
+  }
+
+  // Get argument (second token)
+  char *argument = strtok(NULL, " \t\n");
+
+  // Check for any additional unexpected arguments
+  char *extra_arg = strtok(NULL, " \t\n");
+
+  if (strcmp(cmd_name, "/exit") == 0) {
+    if (argument != NULL) {
+      printf("(CLIENT) >>> ERROR: /exit command takes no arguments\n");
+      printf("> ");
+      fflush(stdout);
+      free(cmd_copy);
+      return NON_FATAL_ERR;
+    }
+    send_packet(sockfd, servaddr, REQ_LOGOUT, NULL, NULL);
+    printf("Exiting...\n");
+    free(cmd_copy);
+    return SUCCESS_EXIT;
+
+  } else if (strcmp(cmd_name, "/join") == 0) {
+    if (!argument) {
+      printf("(CLIENT) >>> ERROR: Please provide a channel name to join.\nUsage: /join [channel]\n");
+      printf("> ");
+      fflush(stdout);
+      free(cmd_copy);
+      return NON_FATAL_ERR;
+    }
+    if (extra_arg) {
+      printf("(CLIENT) >>> ERROR: Too many arguments.\nUsage: /join [channel]\n");
+      printf("> ");
+      fflush(stdout);
+      free(cmd_copy);
+      return NON_FATAL_ERR;
+    }
+    if (strlen(argument) > CHANNEL_MAX_CHAR) {
+      printf("(CLIENT) >>> ERROR: Channel name > %d characters.\n", CHANNEL_MAX_CHAR);
+      printf("> ");
+      fflush(stdout);
+      free(cmd_copy);
+      return NON_FATAL_ERR;
+    }
+    send_packet(sockfd, servaddr, REQ_JOIN, user, argument);
+
+  } else if (strcmp(cmd_name, "/leave") == 0) {
+    if (!argument) {
+      printf("(CLIENT) >>> ERROR: Please provide a channel name to leave.\nUsage: /leave [channel]\n");
+      printf("> ");
+      fflush(stdout);
+      free(cmd_copy);
+      return NON_FATAL_ERR;
+    }
+    if (extra_arg) {
+      printf("(CLIENT) >>> ERROR: Too many arguments.\nUsage: /leave [channel]\n");
+      printf("> ");
+      fflush(stdout);
+      free(cmd_copy);
+      return NON_FATAL_ERR;
+    }
+    if (strlen(argument) > CHANNEL_MAX_CHAR) {
+      printf("(CLIENT) >>> ERROR: Channel name > %d characters.\n", CHANNEL_MAX_CHAR);
+      printf("> ");
+      fflush(stdout);
+      free(cmd_copy);
+      return NON_FATAL_ERR;
+    }
+    send_packet(sockfd, servaddr, REQ_LEAVE, user, argument);
+
+  } else if (strcmp(cmd_name, "/list") == 0) {
+    if (argument) {
+      printf("(CLIENT) >>> ERROR: /list command takes no arguments\n");
+      printf("> ");
+      fflush(stdout);
+      free(cmd_copy);
+      return NON_FATAL_ERR;
+    }
+    send_packet(sockfd, servaddr, REQ_LIST, user, NULL);
+
+  } else if (strcmp(cmd_name, "/who") == 0) {
+    if (!argument) {
+      printf("(CLIENT) >>> ERROR: Please provide a channel name.\nUsage: /who [channel]\n");
+      printf("> ");
+      fflush(stdout);
+      free(cmd_copy);
+      return NON_FATAL_ERR;
+    }
+    if (extra_arg) {
+      printf("(CLIENT) >>> ERROR: Too many arguments.\nUsage: /who [channel]\n");
+      printf("> ");
+      fflush(stdout);
+      free(cmd_copy);
+      return NON_FATAL_ERR;
+    }
+    if (strlen(argument) > CHANNEL_MAX_CHAR) {
+      printf("(CLIENT) >>> ERROR: Channel name > %d characters.\n", CHANNEL_MAX_CHAR);
+      printf("> ");
+      fflush(stdout);
+      free(cmd_copy);
+      return NON_FATAL_ERR;
+    }
+    send_packet(sockfd, servaddr, REQ_WHO, user, argument);
+
+  } else if (strcmp(cmd_name, "/switch") == 0) {
+    if (!argument) {
+      printf("(CLIENT) >>> ERROR: Please provide a channel name to switch to.\nUsage: /switch [channel]\n");
+      printf("> ");
+      fflush(stdout);
+      free(cmd_copy);
+      return NON_FATAL_ERR;
+    }
+    if (extra_arg) {
+      printf("(CLIENT) >>> ERROR: Too many arguments.\nUsage: /switch [channel]\n");
+      printf("> ");
+      fflush(stdout);
+      free(cmd_copy);
+      return NON_FATAL_ERR;
+    }
+    if (strlen(argument) > CHANNEL_MAX_CHAR) {
+      printf("(CLIENT) >>> ERROR: Channel name > %d characters.\n", CHANNEL_MAX_CHAR);
+      printf("> ");
+      fflush(stdout);
+      free(cmd_copy);
+      return NON_FATAL_ERR;
+    }
+    strncpy(user->current_channel, argument, CHANNEL_MAX_CHAR);
+    printf("Switched to channel: %s\n", argument);
+
+  } else {
+    printf("(CLIENT) >>> ERROR: Unknown command\n");
+    printf("> ");
+    fflush(stdout);
+    free(cmd_copy);
+    return NON_FATAL_ERR;
+  }
+
+  printf("> ");
+  fflush(stdout);
+  free(cmd_copy);
   return SUCCESS;
 }
 
