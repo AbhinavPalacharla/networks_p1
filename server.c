@@ -92,7 +92,7 @@ int handle_request(int sockfd, request *request, struct sockaddr_in *client, use
 
     print_text_list(res);
 
-    int n = sendto(sockfd, res, size, 0, (const struct sockaddr *)client, sizeof(&client));
+    int n = sendto(sockfd, res, size, 0, (const struct sockaddr *)client, sizeof(struct sockaddr_in));
 
     if (n < 0) {
       perror("sendto error");
