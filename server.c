@@ -131,7 +131,8 @@ int handle_request(int sockfd, request *request, struct sockaddr_in *client, use
 
     print_text_who(res);
 
-    sendto(sockfd, res, size, 0, (const struct sockaddr *)client, sizeof(&client));
+    // sendto(sockfd, res, size, 0, (const struct sockaddr *)client, sizeof(&client));
+    sendto(sockfd, res, size, 0, (const struct sockaddr *)client, sizeof(struct sockaddr_in));
   } else if (request->req_type == REQ_SAY) {
     request_say *req = (request_say *)request;
 
@@ -163,7 +164,7 @@ int handle_request(int sockfd, request *request, struct sockaddr_in *client, use
       recipient_addr.sin_port = htons(sub->user->port);
       inet_pton(AF_INET, sub->user->ip, &recipient_addr.sin_addr);
 
-      sendto(sockfd, &res, sizeof(res), 0, (const struct sockaddr *)&recipient_addr, sizeof(recipient_addr));
+      sendto(sockfd, &res, sizeof(res), 0, (const struct sockaddr *)&recipient_addr, sizeof(struct sockaddr_in));
     }
   }
 
