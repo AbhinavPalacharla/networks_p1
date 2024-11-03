@@ -24,7 +24,7 @@ int send_message(int sockfd, struct sockaddr_in servaddr, user *user, char *msg)
   strncpy(say_packet.channel, user->current_channel->channel_name, CHANNEL_MAX_CHAR);
   strncpy(say_packet.text, msg, SAY_MAX_CHAR);
 
-  sendto(sockfd, &say_packet, sizeof(say_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
+  sendto(sockfd, &say_packet, sizeof(say_packet), 0, (const struct sockaddr *)&servaddr, sizeof(struct sockaddr_in));
 
   return SUCCESS;
 }
@@ -35,27 +35,27 @@ int send_packet(int sockfd, struct sockaddr_in servaddr, int packet_type, user *
     login_packet.req_type = REQ_LOGIN;
     strncpy(login_packet.username, user->username, USERNAME_MAX_CHAR);
 
-    sendto(sockfd, &login_packet, sizeof(login_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
+    sendto(sockfd, &login_packet, sizeof(login_packet), 0, (const struct sockaddr *)&servaddr, sizeof(struct sockaddr_in));
 
   } else if (packet_type == REQ_LOGOUT) {
     request_logout logout_packet;
     logout_packet.req_type = REQ_LOGOUT;
 
-    sendto(sockfd, &logout_packet, sizeof(logout_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
+    sendto(sockfd, &logout_packet, sizeof(logout_packet), 0, (const struct sockaddr *)&servaddr, sizeof(struct sockaddr_in));
 
   } else if (packet_type == REQ_JOIN) {
     request_join join_packet;
     join_packet.req_type = REQ_JOIN;
     strncpy(join_packet.channel, data, CHANNEL_MAX_CHAR);
 
-    sendto(sockfd, &join_packet, sizeof(join_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
+    sendto(sockfd, &join_packet, sizeof(join_packet), 0, (const struct sockaddr *)&servaddr, sizeof(struct sockaddr_in));
 
   } else if (packet_type == REQ_LEAVE) {
     request_leave leave_packet;
     leave_packet.req_type = REQ_LEAVE;
     strncpy(leave_packet.channel, data, CHANNEL_MAX_CHAR);
 
-    sendto(sockfd, &leave_packet, sizeof(leave_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
+    sendto(sockfd, &leave_packet, sizeof(leave_packet), 0, (const struct sockaddr *)&servaddr, sizeof(struct sockaddr_in));
 
   } else if (packet_type == REQ_SAY) {
     request_say say_packet;
@@ -67,20 +67,20 @@ int send_packet(int sockfd, struct sockaddr_in servaddr, int packet_type, user *
     strncpy(say_packet.channel, user->current_channel->channel_name, CHANNEL_MAX_CHAR);
     strncpy(say_packet.text, data, SAY_MAX_CHAR);
 
-    sendto(sockfd, &say_packet, sizeof(say_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
+    sendto(sockfd, &say_packet, sizeof(say_packet), 0, (const struct sockaddr *)&servaddr, sizeof(struct sockaddr_in));
 
   } else if (packet_type == REQ_LIST) {
     request_list list_packet;
     list_packet.req_type = REQ_LIST;
 
-    sendto(sockfd, &list_packet, sizeof(list_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
+    sendto(sockfd, &list_packet, sizeof(list_packet), 0, (const struct sockaddr *)&servaddr, sizeof(struct sockaddr_in));
 
   } else if (packet_type == REQ_WHO) {
     request_who who_packet;
     who_packet.req_type = REQ_WHO;
     strncpy(who_packet.channel, data, CHANNEL_MAX_CHAR);
 
-    sendto(sockfd, &who_packet, sizeof(who_packet), 0, (const struct sockaddr *)&servaddr, sizeof(servaddr));
+    sendto(sockfd, &who_packet, sizeof(who_packet), 0, (const struct sockaddr *)&servaddr, sizeof(struct sockaddr_in));
 
   } else {
     perror("Unknown packet type");
@@ -232,8 +232,6 @@ int handle_command(int sockfd, struct sockaddr_in servaddr, char *command, user 
     }
 
     send_packet(sockfd, servaddr, REQ_LIST, user, NULL);
-
-    printf("DONE\n");
 
   } else if (strcmp(cmd_name, "/who") == 0) {
     if (!argument) {
