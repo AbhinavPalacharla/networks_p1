@@ -2,6 +2,7 @@
 #include "duckchat.h"
 #include "shared.h"
 #include <arpa/inet.h>
+#include <errno.h>
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -92,6 +93,11 @@ int handle_request(int sockfd, request *request, struct sockaddr_in *client, use
     print_text_list(res);
 
     int n = sendto(sockfd, res, size, 0, (const struct sockaddr *)client, sizeof(&client));
+
+    if (n < 0) {
+      perror("sendto error");
+      printf("ERROR CODE: %d\n", errno);
+    }
 
     printf("SENT %d BYTES\n", n);
   } else if (request->req_type == REQ_WHO) {
