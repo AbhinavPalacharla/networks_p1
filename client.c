@@ -438,7 +438,7 @@ int main(int argc, char **argv) {
 
   printf("> ");
   fflush(stdout);
-  // Main loop
+
   while (1) {
     // Setup select() monitoring
     fd_set watch_fds;

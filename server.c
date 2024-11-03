@@ -172,7 +172,12 @@ int handle_request(int sockfd, request *request, struct sockaddr_in *client, use
   return SUCCESS;
 }
 
-int main() {
+int main(int argc, char **argv) {
+  if (argc != 3) {
+    printf("Usage: ./server [hostname] [port]\n");
+    exit(EXIT_FAILURE);
+  }
+
   int sockfd;
   if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
     perror("socket creation failed");
@@ -182,13 +187,13 @@ int main() {
   struct sockaddr_in server_addr;
   memset(&server_addr, 0, sizeof(server_addr));
 
-  // Filling server information
-  server_addr.sin_family = AF_INET; // IPv4
-  if (inet_pton(AF_INET, SERVER_IP, &(server_addr.sin_addr)) <= 0) {
+  // Configure Server
+  server_addr.sin_family = AF_INET;
+  if (inet_pton(AF_INET, argv[1], &(server_addr.sin_addr)) <= 0) {
     perror("Invalid address/ Address not supported");
     goto fail_exit;
   }
-  server_addr.sin_port = htons(PORT);
+  server_addr.sin_port = htons(atoi(argv[2]));
 
   // Bind the socket with the server address
   if (bind(sockfd, (const struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
