@@ -102,6 +102,10 @@ int handle_command(int sockfd, struct sockaddr_in servaddr, char *command, user_
       return NON_FATAL_ERR;
     }
 
+    if (strlen(channel) > CHANNEL_MAX_CHAR) {
+      printf("(CLIENT) >>> ERROR: Channel name > %d characters.\n", CHANNEL_MAX_CHAR);
+    }
+
     send_packet(sockfd, servaddr, REQ_JOIN, user, channel);
 
     printf("> ");
@@ -118,6 +122,10 @@ int handle_command(int sockfd, struct sockaddr_in servaddr, char *command, user_
     if (*channel == '\0') {
       printf("(CLIENT) >>> ERROR: Please provide a channel name to leave.\nUsage: /leave [channel]\n");
       return NON_FATAL_ERR;
+    }
+
+    if (strlen(channel) > CHANNEL_MAX_CHAR) {
+      printf("(CLIENT) >>> ERROR: Channel name > %d characters.\n", CHANNEL_MAX_CHAR);
     }
 
     send_packet(sockfd, servaddr, REQ_LEAVE, user, channel);
@@ -149,14 +157,20 @@ int handle_command(int sockfd, struct sockaddr_in servaddr, char *command, user_
   } else if (strncmp(command, "/switch", strlen("/switch")) == 0) {
 
     char *channel = command + strlen("/switch");
+
     // Skip leading whitespace
     while (*channel == ' ') {
       channel++;
     }
+
     // Check if channel name is provided
     if (*channel == '\0') {
       printf("(CLIENT) >>> ERROR: Please provide a channel name to switch to.\nUsage: /switch [channel]\n");
       return NON_FATAL_ERR;
+    }
+
+    if (strlen(channel) > CHANNEL_MAX_CHAR) {
+      printf("(CLIENT) >>> ERROR: Channel name > %d characters.\n", CHANNEL_MAX_CHAR);
     }
 
     // TODO: Make sure user is subscribed to channel before using /switch to the channel
@@ -236,6 +250,12 @@ int handle_response(text *response) {
 }
 
 int main(int argc, char **argv) {
+
+  if (argc != 4) {
+    printf("Usage: ./client [server_hostname] [server_port] [username]\n");
+    exit(EXIT_FAILURE);
+  }
+
   // Socket setup
   int sockfd;
   if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
@@ -247,19 +267,21 @@ int main(int argc, char **argv) {
   struct sockaddr_in servaddr;
   memset(&servaddr, 0, sizeof(servaddr));
   servaddr.sin_family = AF_INET;
-  servaddr.sin_port = htons(SERVER_PORT);
-  if (inet_pton(AF_INET, SERVER_IP, &(servaddr.sin_addr)) <= 0) {
+  servaddr.sin_port = htons(atoi(argv[2]));
+  if (inet_pton(AF_INET, argv[1], &(servaddr.sin_addr)) <= 0) {
     perror("Invalid address/ Address not supported");
     goto fail_exit;
   }
 
   // User setup
   user_info *user = (user_info *)malloc(sizeof(user_info));
-  if (argc == 2) {
-    strncpy(user->username, argv[argc - 1], USERNAME_MAX_CHAR);
-  } else {
-    strncpy(user->username, "abhinavp", USERNAME_MAX_CHAR); // Default username
+
+  if (strlen(argv[3]) > USERNAME_MAX_CHAR) {
+    printf("(CLIENT) >>> ERROR: Username > %d characters.\n", USERNAME_MAX_CHAR);
+    goto fail_exit;
   }
+
+  strncpy(user->username, argv[argc - 1], USERNAME_MAX_CHAR);
   strncpy(user->current_channel, "Common", CHANNEL_MAX_CHAR); // Default channel
 
   printf("CLIENT STARTING...\n");
@@ -268,8 +290,6 @@ int main(int argc, char **argv) {
   send_packet(sockfd, servaddr, REQ_LOGIN, user, NULL);
 
   // Buffer setup
-  char server_buffer[CLIENT_BUFFER_SIZE];
-  char message_buffer[SAY_MAX_CHAR + 1];
   socklen_t len = sizeof(servaddr);
 
   printf("> ");
@@ -291,7 +311,7 @@ int main(int argc, char **argv) {
 
     // Handle socket activity (server messages)
     if (FD_ISSET(sockfd, &watch_fds)) {
-      memset(server_buffer, 0, sizeof(server_buffer));
+      char server_buffer[CLIENT_BUFFER_SIZE];
 
       int n = recvfrom(sockfd, server_buffer, sizeof(server_buffer), 0, (struct sockaddr *)&servaddr, &len);
       if (n < 0) {
@@ -306,9 +326,25 @@ int main(int argc, char **argv) {
 
     // Handle stdin activity (user input)
     if (FD_ISSET(STDIN_FILENO, &watch_fds)) {
-      memset(message_buffer, 0, sizeof(message_buffer));
-      fgets(message_buffer, sizeof(message_buffer), stdin);
-      message_buffer[strcspn(message_buffer, "\n")] = '\0';
+
+      // Clear old inputs
+      fflush(stdin);
+      char raw_input[1024 * 10];
+      char message_buffer[SAY_MAX_CHAR + 1];
+
+      fgets(raw_input, 1024 * 10, stdin);
+
+      // Prevent buffer from being overflowed by only allowing a max number of 64 chars
+      strncpy(message_buffer, raw_input, SAY_MAX_CHAR);
+      message_buffer[strcspn(message_buffer, "\n")] = '\0'; // If message didn't overflow then replace \n with end line
+      message_buffer[SAY_MAX_CHAR] = '\0';                  // If message does overflow then place end line
+
+      // skip empty messages
+      if (strlen(message_buffer) == 0) {
+        printf("> ");
+        fflush(stdout);
+        continue;
+      }
 
       if (message_buffer[0] == '/') {
         int result = handle_command(sockfd, servaddr, message_buffer, user);
@@ -318,6 +354,11 @@ int main(int argc, char **argv) {
           goto success_exit;
         }
       } else {
+
+        if (strlen(message_buffer) > SAY_MAX_CHAR) {
+          printf("(CLIENT) >>> ERROR: Message length > %d characters\n", SAY_MAX_CHAR);
+        }
+
         send_message(sockfd, servaddr, user, message_buffer);
       }
     }
