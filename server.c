@@ -286,7 +286,7 @@ int main(int argc, char **argv) {
 
   print_channels(channel_list);
 
-  printf("SERVER STARTING...\n");
+  printf("SERVER STARTING ON %s %d\n", argv[1], atoi(argv[2]));
 
   while (1) {
     // Reset client_addr

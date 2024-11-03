@@ -432,7 +432,7 @@ int main(int argc, char **argv) {
   user->current_channel = c;
   user->subbed_channels_head = c;
 
-  printf("CLIENT STARTING...\n");
+  printf("CLIENT STARTING WITH SERVER ON %s %d\n", argv[1], atoi(argv[2]));
 
   // Send initial login packet
   send_packet(sockfd, servaddr, REQ_LOGIN, user, NULL);
@@ -498,7 +498,6 @@ int main(int argc, char **argv) {
 
       if (message_buffer[0] == '/') {
         int result = handle_command(sockfd, servaddr, message_buffer, user);
-        printf("RESULT: %d\n", result);
         if (result < 0) {
           goto fail_exit;
         } else if (result == SUCCESS_EXIT) {
