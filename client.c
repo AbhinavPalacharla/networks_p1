@@ -2,7 +2,6 @@
 #include "duckchat.h"
 #include "shared.h"
 #include <arpa/inet.h>
-#include <cstring>
 #include <ctype.h>
 #include <netinet/in.h>
 #include <stdio.h>
