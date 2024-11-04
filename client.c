@@ -1,5 +1,6 @@
 #include "client.h"
 #include "duckchat.h"
+#include "raw.h"
 #include "shared.h"
 #include <arpa/inet.h>
 #include <ctype.h>
@@ -376,10 +377,37 @@ int handle_response(text *response, user *user) {
   return SUCCESS;
 }
 
+void cleanup(int sockfd, user *user) {
+  close(sockfd);
+  if (user != NULL) {
+    // Free all subscribed channels
+    subbed_channel *current = user->subbed_channels_head;
+    while (current != NULL) {
+      subbed_channel *next = current->next;
+      free(current);
+      current = next;
+    }
+    free(user);
+  }
+}
+
 int main(int argc, char **argv) {
 
   if (argc != 4) {
     printf("Usage: ./client [server_hostname] [server_port] [username]\n");
+    exit(EXIT_FAILURE);
+  }
+
+  // Set up raw mode
+  if (raw_mode() < 0) {
+    printf("Error: Unable to set raw mode\n");
+    exit(EXIT_FAILURE);
+  }
+
+  // Register cooked_mode to be called at exit
+  if (atexit(cooked_mode) != 0) {
+    printf("Error: Unable to register cooked mode at exit\n");
+    cooked_mode(); // Make sure we restore cooked mode
     exit(EXIT_FAILURE);
   }
 
@@ -506,12 +534,14 @@ int main(int argc, char **argv) {
   }
 
 success_exit:
-  close(sockfd);
-  free(user);
+  // close(sockfd);
+  // free(user);
+  cleanup(sockfd, user);
   exit(SUCCESS);
 
 fail_exit:
-  close(sockfd);
-  free(user);
+  // close(sockfd);
+  // free(user);
+  cleanup(sockfd, user);
   exit(EXIT_FAILURE);
 }
