@@ -311,17 +311,17 @@ int handle_command(int sockfd, struct sockaddr_in servaddr, char *command, user 
   return SUCCESS;
 }
 
-int handle_response(text *response, user *user) {
+int handle_response(text *response) {
   if (response->txt_type == TXT_LIST) {
     text_list *res = (text_list *)response;
 
     size_t needed_size =
-        strlen("Existing channels:\n") + (res->n_channel * (CHANNEL_MAX_CHAR + 2)) + 1; // +2 for \t and \n, +1 for null terminator
+        strlen("Existing channels:\n") + (res->n_channel * (CHANNEL_MAX_CHAR + 2)) + 2; // +2 for \t and \n, +1 for null terminator
 
     char *str = malloc(needed_size);
     memset(str, 0, needed_size); // Clear the buffer
 
-    strncpy(str, "Existing channels:\n", strlen("Existing channels:\n"));
+    strncpy(str, "Existing channels:\n", strlen("Existing channels:\n") + 1);
 
     for (int i = 0; i < res->n_channel; i++) {
       strcat(str, "\t");
@@ -336,12 +336,12 @@ int handle_response(text *response, user *user) {
     text_who *res = (text_who *)response;
 
     size_t needed_size = strlen("Users on Channel ") + strlen(res->channel) + strlen(":\n") + (res->n_username * (USERNAME_MAX_CHAR + 2)) +
-                         1; // +2 for \t and \n, +1 for null terminator
+                         2; // +2 for \t and \n, +1 for null terminator
 
     char *str = malloc(needed_size);
     memset(str, 0, needed_size); // Clear the buffer
 
-    strncpy(str, "Users on Channel ", strlen("Users on Channel "));
+    strncpy(str, "Users on Channel ", strlen("Users on Channel ") + 1);
     strcat(str, res->channel);
     strcat(str, ":\n");
 
@@ -486,7 +486,7 @@ int main(int argc, char **argv) {
       // print_text((text *)server_buffer);
       // printf("\n\n\n");
       // handle_response((text *)server_buffer);
-      handle_response((text *)server_buffer, user);
+      handle_response((text *)server_buffer);
     }
 
     // Handle stdin activity (user input)
