@@ -314,7 +314,14 @@ int handle_response(text *response, user *user) {
   if (response->txt_type == TXT_LIST) {
     text_list *res = (text_list *)response;
 
-    char *str = malloc(strlen("Existing channels:\n") + (CHANNEL_MAX_CHAR * (res->n_channel + 5)));
+    // Calculate exact size needed
+    size_t needed_size =
+        strlen("Existing channels:\n") + (res->n_channel * (CHANNEL_MAX_CHAR + 2)) + 1; // +2 for \t and \n, +1 for null terminator
+
+    char *str = malloc(needed_size);
+    memset(str, 0, needed_size); // Clear the buffer
+
+    // char *str = malloc(strlen("Existing channels:\n") + (CHANNEL_MAX_CHAR * (res->n_channel + 5)));
 
     strncpy(str, "Existing channels:\n", strlen("Existing channels:\n"));
 
