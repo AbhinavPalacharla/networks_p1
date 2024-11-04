@@ -312,21 +312,20 @@ int handle_command(int sockfd, struct sockaddr_in servaddr, char *command, user 
 
 int handle_response(text *response, user *user) {
   if (response->txt_type == TXT_LIST) {
-    char *str = malloc(sizeof(char) * strlen("Existing channels:\n"));
-    if (!str)
-      return FAILURE;
-    strncpy(str, "Existing channels:\n", strlen("Existing channels:\n"));
-
     text_list *res = (text_list *)response;
 
+    char *str = malloc(strlen("Existing channels:\n") + (CHANNEL_MAX_CHAR * (res->n_channel + 5)));
+
+    strncpy(str, "Existing channels:\n", strlen("Existing channels:\n"));
+
     for (int i = 0; i < res->n_channel; i++) {
-      size_t new_size = strlen(str) + strlen(res->channels[i].channel) + 3;
-      char *new_str = realloc(str, new_size);
-      if (!new_str) {
-        free(str);
-        return FAILURE;
-      }
-      str = new_str;
+      // size_t new_size = strlen(str) + strlen(res->channels[i].channel) + 3;
+      // char *new_str = realloc(str, new_size);
+      // if (!new_str) {
+      //   free(str);
+      //   return FAILURE;
+      // }
+      // str = new_str;
 
       strcat(str, "\t");
       strcat(str, res->channels[i].channel);
@@ -336,25 +335,23 @@ int handle_response(text *response, user *user) {
     printf("\r\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
     printf("%s", str);
     free(str);
-
   } else if (response->txt_type == TXT_WHO) {
     text_who *res = (text_who *)response;
 
-    char *str = malloc(sizeof(char) * (strlen("Users on Channel :\n") + strlen(res->channel)));
-    if (!str)
-      return FAILURE;
+    char *str = malloc(strlen("Users on Channel :\n") + strlen(res->channel) + ((USERNAME_MAX_CHAR + 5) * res->n_username));
+
     strncpy(str, "Users on Channel ", strlen("Users on Channel "));
     strcat(str, res->channel);
     strcat(str, ":\n");
 
     for (int i = 0; i < res->n_username; i++) {
-      size_t new_size = strlen(str) + strlen(res->users[i].username) + 3;
-      char *new_str = realloc(str, new_size);
-      if (!new_str) {
-        free(str);
-        return FAILURE;
-      }
-      str = new_str;
+      // size_t new_size = strlen(str) + strlen(res->users[i].username) + 3;
+      // char *new_str = realloc(str, new_size);
+      // if (!new_str) {
+      //   free(str);
+      //   return FAILURE;
+      // }
+      // str = new_str;
 
       strcat(str, "\t");
       strcat(str, res->users[i].username);
