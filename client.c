@@ -506,7 +506,7 @@ int main(int argc, char **argv) {
       if (message_buffer[SAY_MAX_CHAR] != '\0' && message_buffer[SAY_MAX_CHAR] != '\n') {
         printf("(CLIENT) >>> ERROR: Message length > %d characters. Please enter a shorter message.\n", SAY_MAX_CHAR);
 
-        // Clear the buffer to discard excess input
+        // Clear excess input
         int c;
         while ((c = getchar()) != '\n' && c != EOF) {
         }
@@ -540,6 +540,8 @@ int main(int argc, char **argv) {
 
         send_message(sockfd, servaddr, user, message_buffer);
       }
+
+      memset(message_buffer, 0, sizeof(message_buffer));
     }
   }
 
