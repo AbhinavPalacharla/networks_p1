@@ -536,12 +536,12 @@ int main(int argc, char **argv) {
 success_exit:
   // close(sockfd);
   // free(user);
-  cleanup(sockfd, user);
+  // cleanup(sockfd, user);
   exit(SUCCESS);
 
 fail_exit:
   // close(sockfd);
   // free(user);
-  cleanup(sockfd, user);
+  // cleanup(sockfd, user);
   exit(EXIT_FAILURE);
 }
