@@ -503,17 +503,17 @@ int main(int argc, char **argv) {
       char message_buffer[SAY_MAX_CHAR + 2];
       fgets(message_buffer, SAY_MAX_CHAR + 1, stdin);
 
-      if (strlen(message_buffer) > SAY_MAX_CHAR) {
+      if (message_buffer[SAY_MAX_CHAR] != '\0' && message_buffer[SAY_MAX_CHAR] != '\n') {
         printf("(CLIENT) >>> ERROR: Message length > %d characters. Please enter a shorter message.\n", SAY_MAX_CHAR);
 
+        // Clear the buffer to discard excess input
         int c;
         while ((c = getchar()) != '\n' && c != EOF) {
-          // Loop until the buffer is cleared
         }
 
         printf("> ");
         fflush(stdout);
-        continue; // Skip sending and go back to prompt.
+        continue;
       }
 
       message_buffer[strcspn(message_buffer, "\n")] = '\0';
