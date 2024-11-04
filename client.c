@@ -486,25 +486,19 @@ int main(int argc, char **argv) {
     // Handle stdin activity (user input)
     if (FD_ISSET(STDIN_FILENO, &watch_fds)) {
 
-      char message_buffer[SAY_MAX_CHAR + 2];
-      fgets(message_buffer, SAY_MAX_CHAR + 1, stdin);
+      // Clear old inputs
+      fflush(stdin);
+      char raw_input[1024 * 10];
+      memset(raw_input, 0, 1024 * 10);
+      char message_buffer[SAY_MAX_CHAR + 1];
+      memset(message_buffer, 0, SAY_MAX_CHAR + 1);
 
-      message_buffer[strcspn(message_buffer, "\n")] = '\0';
+      fgets(raw_input, 1024 * 10, stdin);
 
-      if (message_buffer[SAY_MAX_CHAR] != '\0' && message_buffer[SAY_MAX_CHAR] != '\n') {
-        printf("(CLIENT) >>> ERROR: Message length > %d characters. Please enter a shorter message.\n", SAY_MAX_CHAR);
-
-        // Clear excess input
-        int c;
-        while ((c = getchar()) != '\n' && c != EOF) {
-        }
-
-        printf("> ");
-        fflush(stdout);
-        continue;
-      }
-
-      // message_buffer[strcspn(message_buffer, "\n")] = '\0';
+      // Prevent buffer from being overflowed by only allowing a max number of 64 chars
+      strncpy(message_buffer, raw_input, SAY_MAX_CHAR);
+      message_buffer[strcspn(message_buffer, "\n")] = '\0'; // If message didn't overflow then replace \n with end line
+      message_buffer[SAY_MAX_CHAR] = '\0';                  // If message does overflow then place end line
 
       // skip empty messages
       if (strlen(message_buffer) == 0) {
@@ -529,7 +523,8 @@ int main(int argc, char **argv) {
         send_message(sockfd, servaddr, user, message_buffer);
       }
 
-      memset(message_buffer, 0, sizeof(message_buffer));
+      memset(raw_input, 0, 1024 * 10);
+      memset(message_buffer, 0, SAY_MAX_CHAR + 1);
     }
   }
 
