@@ -2,6 +2,7 @@
 #include "duckchat.h"
 #include "shared.h"
 #include <arpa/inet.h>
+#include <cstring>
 #include <ctype.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -500,8 +501,16 @@ int main(int argc, char **argv) {
       // message_buffer[strcspn(message_buffer, "\n")] = '\0'; // If message didn't overflow then replace \n with end line
       // message_buffer[SAY_MAX_CHAR] = '\0';                  // If message does overflow then place end line
 
-      char message_buffer[SAY_MAX_CHAR + 1];
+      char message_buffer[SAY_MAX_CHAR + 2];
       fgets(message_buffer, SAY_MAX_CHAR + 1, stdin);
+
+      if (strlen(message_buffer) > SAY_MAX_CHAR) {
+        printf("(CLIENT) >>> ERROR: Message length > %d characters. Please enter a shorter message.\n", SAY_MAX_CHAR);
+        printf("> ");
+        fflush(stdout);
+        continue; // Skip sending and go back to prompt.
+      }
+
       message_buffer[strcspn(message_buffer, "\n")] = '\0';
 
       // skip empty messages
