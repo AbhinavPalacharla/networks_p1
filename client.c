@@ -487,18 +487,22 @@ int main(int argc, char **argv) {
     if (FD_ISSET(STDIN_FILENO, &watch_fds)) {
 
       // Clear old inputs
-      fflush(stdin);
-      char raw_input[1024 * 100];
-      memset(raw_input, 0, 1024 * 100);
-      char message_buffer[SAY_MAX_CHAR + 1];
-      memset(message_buffer, 0, SAY_MAX_CHAR + 1);
+      // fflush(stdin);
+      // char raw_input[1024 * 100];
+      // memset(raw_input, 0, 1024 * 100);
+      // char message_buffer[SAY_MAX_CHAR + 1];
+      // memset(message_buffer, 0, SAY_MAX_CHAR + 1);
 
-      fgets(raw_input, 1024 * 100, stdin);
+      // fgets(raw_input, 1024 * 100, stdin);
 
       // Prevent buffer from being overflowed by only allowing a max number of 64 chars
-      strncpy(message_buffer, raw_input, SAY_MAX_CHAR);
-      message_buffer[strcspn(message_buffer, "\n")] = '\0'; // If message didn't overflow then replace \n with end line
-      message_buffer[SAY_MAX_CHAR] = '\0';                  // If message does overflow then place end line
+      // strncpy(message_buffer, raw_input, SAY_MAX_CHAR);
+      // message_buffer[strcspn(message_buffer, "\n")] = '\0'; // If message didn't overflow then replace \n with end line
+      // message_buffer[SAY_MAX_CHAR] = '\0';                  // If message does overflow then place end line
+
+      char message_buffer[SAY_MAX_CHAR + 1];
+      fgets(message_buffer, SAY_MAX_CHAR + 1, stdin);
+      message_buffer[strcspn(message_buffer, "\n")] = '\0';
 
       // skip empty messages
       if (strlen(message_buffer) == 0) {
