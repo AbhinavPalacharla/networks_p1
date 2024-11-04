@@ -493,7 +493,7 @@ int main(int argc, char **argv) {
       char message_buffer[SAY_MAX_CHAR + 1];
       memset(message_buffer, 0, SAY_MAX_CHAR + 1);
 
-      fgets(raw_input, 1024 * 10, stdin);
+      fgets(raw_input, 1024, stdin);
 
       // Prevent buffer from being overflowed by only allowing a max number of 64 chars
       strncpy(message_buffer, raw_input, SAY_MAX_CHAR);
