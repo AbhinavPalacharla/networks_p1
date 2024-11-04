@@ -314,26 +314,15 @@ int handle_response(text *response, user *user) {
   if (response->txt_type == TXT_LIST) {
     text_list *res = (text_list *)response;
 
-    // Calculate exact size needed
     size_t needed_size =
         strlen("Existing channels:\n") + (res->n_channel * (CHANNEL_MAX_CHAR + 2)) + 1; // +2 for \t and \n, +1 for null terminator
 
     char *str = malloc(needed_size);
     memset(str, 0, needed_size); // Clear the buffer
 
-    // char *str = malloc(strlen("Existing channels:\n") + (CHANNEL_MAX_CHAR * (res->n_channel + 5)));
-
     strncpy(str, "Existing channels:\n", strlen("Existing channels:\n"));
 
     for (int i = 0; i < res->n_channel; i++) {
-      // size_t new_size = strlen(str) + strlen(res->channels[i].channel) + 3;
-      // char *new_str = realloc(str, new_size);
-      // if (!new_str) {
-      //   free(str);
-      //   return FAILURE;
-      // }
-      // str = new_str;
-
       strcat(str, "\t");
       strcat(str, res->channels[i].channel);
       strcat(str, "\n");
@@ -345,9 +334,6 @@ int handle_response(text *response, user *user) {
   } else if (response->txt_type == TXT_WHO) {
     text_who *res = (text_who *)response;
 
-    // char *str = malloc(strlen("Users on Channel :\n") + strlen(res->channel) + ((USERNAME_MAX_CHAR + 5) * res->n_username));
-
-    // Calculate exact size needed
     size_t needed_size = strlen("Users on Channel ") + strlen(res->channel) + strlen(":\n") + (res->n_username * (USERNAME_MAX_CHAR + 2)) +
                          1; // +2 for \t and \n, +1 for null terminator
 
@@ -359,14 +345,6 @@ int handle_response(text *response, user *user) {
     strcat(str, ":\n");
 
     for (int i = 0; i < res->n_username; i++) {
-      // size_t new_size = strlen(str) + strlen(res->users[i].username) + 3;
-      // char *new_str = realloc(str, new_size);
-      // if (!new_str) {
-      //   free(str);
-      //   return FAILURE;
-      // }
-      // str = new_str;
-
       strcat(str, "\t");
       strcat(str, res->users[i].username);
       strcat(str, "\n");
@@ -495,7 +473,6 @@ int main(int argc, char **argv) {
 
       fgets(raw_input, 1024 * 10, stdin);
 
-      // Prevent buffer from being overflowed by only allowing a max number of 64 chars
       strncpy(message_buffer, raw_input, SAY_MAX_CHAR);
       message_buffer[strcspn(message_buffer, "\n")] = '\0'; // If message didn't overflow then replace \n with end line
       message_buffer[SAY_MAX_CHAR] = '\0';                  // If message does overflow then place end line

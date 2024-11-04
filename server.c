@@ -310,10 +310,13 @@ int main(int argc, char **argv) {
     memset(buffer, 0, sizeof(buffer));
 
     // Receive message from client
-    if ((recvfrom(sockfd, (char *)buffer, SERVER_BUFFER_SIZE, 0, (struct sockaddr *)&client_addr, &client_addr_len)) < 0) {
+    int len;
+    if ((len = recvfrom(sockfd, (char *)buffer, SERVER_BUFFER_SIZE, 0, (struct sockaddr *)&client_addr, &client_addr_len)) < 0) {
       perror("Failed to recieve message from client.");
-      goto fail_exit;
+      continue;
     }
+
+    validate_request((request *)buffer, len);
 
     print_client_details(&client_addr);
     print_request((request *)buffer);

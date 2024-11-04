@@ -116,11 +116,9 @@ void join_channel(user *user, channel *channel) {
 }
 
 void leave_channel(user *user, channel *channel) {
-  // Remove the channel from the user's list of subscribed channels
   subbed_channel *subbed_channel_ptr = user->subbed_channels_head;
   while (subbed_channel_ptr) {
     if (subbed_channel_ptr->channel == channel) {
-      // Update pointers to remove the subbed_channel from the user's list
       if (subbed_channel_ptr->prev) {
         subbed_channel_ptr->prev->next = subbed_channel_ptr->next;
       } else {
@@ -129,17 +127,15 @@ void leave_channel(user *user, channel *channel) {
       if (subbed_channel_ptr->next) {
         subbed_channel_ptr->next->prev = subbed_channel_ptr->prev;
       }
-      free(subbed_channel_ptr); // Free the user's subscription node
+      free(subbed_channel_ptr);
       break;
     }
     subbed_channel_ptr = subbed_channel_ptr->next;
   }
 
-  // Remove the user from the channel's list of subscribed users
   subbed_user *subbed_user_ptr = channel->subbed_users_head;
   while (subbed_user_ptr) {
     if (subbed_user_ptr->user == user) {
-      // Update pointers to remove the subbed_user from the channel's list
       if (subbed_user_ptr->prev) {
         subbed_user_ptr->prev->next = subbed_user_ptr->next;
       } else {
@@ -148,7 +144,7 @@ void leave_channel(user *user, channel *channel) {
       if (subbed_user_ptr->next) {
         subbed_user_ptr->next->prev = subbed_user_ptr->prev;
       }
-      free(subbed_user_ptr); // Free the channel's subscription node
+      free(subbed_user_ptr);
       break;
     }
     subbed_user_ptr = subbed_user_ptr->next;
@@ -230,7 +226,6 @@ int delete_channel(channels *channel_list, channel *channel_to_delete) {
     return FAILURE;
   }
 
-  // Remove the channel from the channels list
   if (channel_to_delete->prev) {
     channel_to_delete->prev->next = channel_to_delete->next;
   } else {
@@ -241,9 +236,8 @@ int delete_channel(channels *channel_list, channel *channel_to_delete) {
     channel_to_delete->next->prev = channel_to_delete->prev;
   }
 
-  // Free the channel memory
   free(channel_to_delete);
-  channel_list->num_channels--; // Decrement the channel count
+  channel_list->num_channels--;
 
   return SUCCESS;
 }
@@ -253,10 +247,8 @@ int delete_channel(channels *channel_list, channel *channel_to_delete) {
 void print_client_details(struct sockaddr_in *client) {
   char ip_str[INET_ADDRSTRLEN];
 
-  // Convert IP address to string
   inet_ntop(AF_INET, &(client->sin_addr), ip_str, INET_ADDRSTRLEN);
 
-  // Get port number (convert from network byte order to host byte order)
   unsigned short port = ntohs(client->sin_port);
 
   printf("CLIENT DETAILS\nIP: %s\nPORT: %d\n", ip_str, port);
@@ -280,7 +272,6 @@ void print_channels(const channels *channel_list) {
     if (current_channel->subbed_users_head == NULL) {
       printf(" ERROR: No users subscribed.\n"); // THIS SHOULD NOT HAPPEN
     } else {
-      // Iterate through each user subscribed to the current channel
       subbed_user *current_subbed_user = current_channel->subbed_users_head;
       while (current_subbed_user != NULL) {
         printf(" %s |", current_subbed_user->user->username);
@@ -289,7 +280,6 @@ void print_channels(const channels *channel_list) {
       printf("\n");
     }
 
-    // Move to the next channel
     current_channel = current_channel->next;
   }
 }
@@ -301,11 +291,9 @@ void print_users(const users *user_list) {
   while (current_user != NULL) {
     printf("- %s\n↪ [CHANNELS]", current_user->username);
 
-    // Check if there are any channels this user is subscribed to
     if (current_user->subbed_channels_head == NULL) {
       printf(" NONE\n");
     } else {
-      // Iterate through each channel this user is subscribed to
       subbed_channel *current_subbed_channel = current_user->subbed_channels_head;
       while (current_subbed_channel != NULL) {
         printf(" %s |", current_subbed_channel->channel->name);
@@ -314,9 +302,55 @@ void print_users(const users *user_list) {
       printf("\n");
     }
 
-    // Move to the next user
     current_user = current_user->next;
   }
+}
+
+int validate_request(request *req, size_t received_size) {
+  size_t expected_size;
+
+  switch (req->req_type) {
+  case REQ_LOGIN:
+    expected_size = sizeof(request_login);
+    break;
+
+  case REQ_LOGOUT:
+    expected_size = sizeof(request_logout);
+    break;
+
+  case REQ_JOIN:
+    expected_size = sizeof(request_join);
+    break;
+
+  case REQ_LEAVE:
+    expected_size = sizeof(request_leave);
+    break;
+
+  case REQ_SAY:
+    expected_size = sizeof(request_say);
+    break;
+
+  case REQ_LIST:
+    expected_size = sizeof(request_list);
+    break;
+
+  case REQ_WHO:
+    expected_size = sizeof(request_who);
+    break;
+
+  case REQ_KEEP_ALIVE:
+    expected_size = sizeof(request_keep_alive);
+    break;
+
+  default:
+    return FAILURE;
+  }
+
+  if (received_size != expected_size) {
+    return FAILURE;
+  }
+
+  return SUCCESS;
 }
 
 #endif
