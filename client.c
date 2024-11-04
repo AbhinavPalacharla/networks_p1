@@ -488,8 +488,10 @@ int main(int argc, char **argv) {
 
       // Clear old inputs
       fflush(stdin);
-      char raw_input[1024 * 10];
+      char raw_input[1024];
+      memset(raw_input, 0, 1024);
       char message_buffer[SAY_MAX_CHAR + 1];
+      memset(message_buffer, 0, SAY_MAX_CHAR + 1);
 
       fgets(raw_input, 1024 * 10, stdin);
 
