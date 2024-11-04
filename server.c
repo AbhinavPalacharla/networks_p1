@@ -225,6 +225,19 @@ int handle_request(int sockfd, request *request, struct sockaddr_in *client, use
       return NON_FATAL_ERR;
     }
 
+    int is_subscribed = 0;
+    for (subbed_user *sub = target_channel->subbed_users_head; sub != NULL; sub = sub->next) {
+      if (sub->user == sender) {
+        is_subscribed = 1;
+        break;
+      }
+    }
+
+    if (!is_subscribed) {
+      send_error(sockfd, client, "Not subscribed to channel");
+      return NON_FATAL_ERR;
+    }
+
     text_say res;
     res.txt_type = TXT_SAY;
     strncpy(res.channel, req->channel, CHANNEL_MAX_CHAR);
