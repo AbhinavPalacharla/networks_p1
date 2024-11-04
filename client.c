@@ -345,7 +345,14 @@ int handle_response(text *response, user *user) {
   } else if (response->txt_type == TXT_WHO) {
     text_who *res = (text_who *)response;
 
-    char *str = malloc(strlen("Users on Channel :\n") + strlen(res->channel) + ((USERNAME_MAX_CHAR + 5) * res->n_username));
+    // char *str = malloc(strlen("Users on Channel :\n") + strlen(res->channel) + ((USERNAME_MAX_CHAR + 5) * res->n_username));
+
+    // Calculate exact size needed
+    size_t needed_size = strlen("Users on Channel ") + strlen(res->channel) + strlen(":\n") + (res->n_username * (USERNAME_MAX_CHAR + 2)) +
+                         1; // +2 for \t and \n, +1 for null terminator
+
+    char *str = malloc(needed_size);
+    memset(str, 0, needed_size); // Clear the buffer
 
     strncpy(str, "Users on Channel ", strlen("Users on Channel "));
     strcat(str, res->channel);
