@@ -136,7 +136,7 @@ int handle_request(int sockfd, request *request, struct sockaddr_in *client, use
     print_users(users);
     print_channels(channels);
   } else if (request->req_type == REQ_LOGOUT) {
-    request_leave *req = (request_leave *)request;
+    // request_leave *req = (request_leave *)request;
 
     user *u;
 
